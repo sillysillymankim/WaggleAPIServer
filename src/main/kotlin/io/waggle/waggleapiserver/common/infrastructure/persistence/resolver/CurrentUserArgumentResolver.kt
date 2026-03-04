@@ -41,7 +41,10 @@ class CurrentUserArgumentResolver(
         binderFactory: WebDataBinderFactory?,
     ): User? {
         val authentication = SecurityContextHolder.getContext().authentication
-        val userPrincipal = authentication?.principal as? UserPrincipal ?: return null
+        val userPrincipal =
+            authentication?.principal as? UserPrincipal
+                ?: if (parameter.isOptional) return null
+                else throw BusinessException(ErrorCode.UNAUTHORIZED)
 
         val user =
             userRepository.findByIdOrNull(userPrincipal.userId)
