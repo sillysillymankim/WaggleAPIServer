@@ -1,5 +1,7 @@
 package io.waggle.waggleapiserver.domain.post.service
 
+import io.waggle.waggleapiserver.common.dto.request.CursorGetQuery
+import io.waggle.waggleapiserver.common.dto.response.CursorResponse
 import io.waggle.waggleapiserver.common.exception.BusinessException
 import io.waggle.waggleapiserver.common.exception.ErrorCode
 import io.waggle.waggleapiserver.domain.application.repository.ApplicationRepository
@@ -16,8 +18,7 @@ import io.waggle.waggleapiserver.domain.recruitment.repository.RecruitmentReposi
 import io.waggle.waggleapiserver.domain.user.User
 import io.waggle.waggleapiserver.domain.user.dto.response.UserSimpleResponse
 import io.waggle.waggleapiserver.domain.user.repository.UserRepository
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -76,21 +77,26 @@ class PostService(
 
     fun getPosts(
         query: PostGetQuery,
+        cursorQuery: CursorGetQuery,
         user: User?,
-        pageable: Pageable,
-    ): Page<PostDetailResponse> {
+    ): CursorResponse<PostDetailResponse> {
         val posts =
             postRepository.findWithFilter(
+                cursor = cursorQuery.cursor,
                 q = query.q,
                 positions = query.positions ?: emptySet(),
                 skills = query.skills ?: emptySet(),
-                pageable = pageable,
+                pageable = PageRequest.of(0, cursorQuery.size + 1),
             )
 
-        val authorIds = posts.content.map { it.userId }.distinct()
+        val hasNext = posts.size > cursorQuery.size
+        val content = if (hasNext) posts.take(cursorQuery.size) else posts
+        val nextCursor = if (hasNext) content.last().id else null
+
+        val authorIds = content.map { it.userId }.distinct()
         val authorById = userRepository.findAllById(authorIds).associateBy { it.id }
 
-        val postIds = posts.content.map { it.id }
+        val postIds = content.map { it.id }
         val recruitmentsByPostId =
             recruitmentRepository.findByPostIdIn(postIds).groupBy { it.postId }
 
@@ -102,7 +108,7 @@ class PostService(
                     .toSet()
             } ?: emptySet()
 
-        val memberPostIds = posts.content.filter { it.teamId in memberTeamIdSet }.map { it.id }
+        val memberPostIds = content.filter { it.teamId in memberTeamIdSet }.map { it.id }
         val applicantCountByPostId =
             if (memberPostIds.isNotEmpty()) {
                 applicationRepository
@@ -112,24 +118,31 @@ class PostService(
                 emptyMap()
             }
 
-        return posts.map { post ->
-            val author =
-                authorById[post.userId]
-                    ?: throw BusinessException(
-                        ErrorCode.ENTITY_NOT_FOUND,
-                        "User not found: ${post.userId}",
-                    )
-            val recruitments =
-                (recruitmentsByPostId[post.id] ?: emptyList()).map { RecruitmentResponse.from(it) }
-            val applicantCount =
-                if (post.teamId in memberTeamIdSet) applicantCountByPostId[post.id] ?: 0 else null
-            PostDetailResponse.of(
-                post,
-                UserSimpleResponse.from(author),
-                recruitments,
-                applicantCount,
-            )
-        }
+        val data =
+            content.map { post ->
+                val author =
+                    authorById[post.userId]
+                        ?: throw BusinessException(
+                            ErrorCode.ENTITY_NOT_FOUND,
+                            "User not found: ${post.userId}",
+                        )
+                val recruitments =
+                    (recruitmentsByPostId[post.id] ?: emptyList()).map { RecruitmentResponse.from(it) }
+                val applicantCount =
+                    if (post.teamId in memberTeamIdSet) applicantCountByPostId[post.id] ?: 0 else null
+                PostDetailResponse.of(
+                    post,
+                    UserSimpleResponse.from(author),
+                    recruitments,
+                    applicantCount,
+                )
+            }
+
+        return CursorResponse(
+            data = data,
+            nextCursor = nextCursor,
+            hasNext = hasNext,
+        )
     }
 
     fun getPost(
