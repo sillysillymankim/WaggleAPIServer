@@ -1,5 +1,6 @@
 package io.waggle.waggleapiserver.common.exception
 
+import io.waggle.waggleapiserver.common.dto.response.ErrorResponse
 import io.waggle.waggleapiserver.common.infrastructure.discord.DiscordErrorContext
 import io.waggle.waggleapiserver.common.infrastructure.discord.DiscordWebhookClient
 import jakarta.servlet.http.HttpServletRequest
@@ -15,13 +16,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
-
-data class ErrorResponse(
-    val status: Int,
-    val code: String,
-    val message: String,
-    val detail: String? = null,
-)
 
 @RestControllerAdvice
 class GlobalExceptionHandler(
