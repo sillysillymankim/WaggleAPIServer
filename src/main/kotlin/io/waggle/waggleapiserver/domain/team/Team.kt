@@ -71,5 +71,4 @@ class Team(
             throw BusinessException(ErrorCode.INVALID_STATE, "Team is not completed yet")
         }
     }
-
 }
