@@ -19,6 +19,7 @@ import io.waggle.waggleapiserver.domain.memberreview.service.MemberReviewService
 import io.waggle.waggleapiserver.domain.notification.dto.response.NotificationResponse
 import io.waggle.waggleapiserver.domain.notification.service.NotificationService
 import io.waggle.waggleapiserver.domain.team.dto.response.TeamSimpleResponse
+import io.waggle.waggleapiserver.domain.user.dto.request.MemberUpdateVisibilityRequest
 import io.waggle.waggleapiserver.domain.user.dto.request.UserSetupProfileRequest
 import io.waggle.waggleapiserver.domain.user.dto.request.UserUpdateRequest
 import io.waggle.waggleapiserver.domain.user.dto.response.UserCheckUsernameResponse
@@ -29,6 +30,7 @@ import io.waggle.waggleapiserver.domain.user.dto.response.UserSimpleResponse
 import io.waggle.waggleapiserver.domain.user.service.UserService
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -102,7 +104,7 @@ class UserController(
     @GetMapping("/{userId}/teams")
     fun getUserTeams(
         @PathVariable userId: UUID,
-    ): List<TeamSimpleResponse> = userService.getUserTeams(userId)
+    ): List<TeamSimpleResponse> = userService.getUserTeams(userId, includeHidden = false)
 
     @Operation(summary = "본인 프로필 조회")
     @GetMapping("/me")
@@ -172,7 +174,15 @@ class UserController(
     @GetMapping("/me/teams")
     fun getMyTeams(
         @CurrentUser user: User,
-    ): List<TeamSimpleResponse> = userService.getUserTeams(user.id)
+    ): List<TeamSimpleResponse> = userService.getUserTeams(user.id, includeHidden = true)
+
+    @Operation(summary = "본인 팀 공개/비공개 설정")
+    @PatchMapping("/me/teams/{teamId}/visibility")
+    fun updateMyTeamVisibility(
+        @PathVariable teamId: Long,
+        @Valid @RequestBody request: MemberUpdateVisibilityRequest,
+        @CurrentUser user: User,
+    ): TeamSimpleResponse = userService.updateTeamVisibility(user.id, teamId, request.isVisible)
 
     @Operation(summary = "본인 프로필 수정")
     @PutMapping("/me")

@@ -105,19 +105,50 @@ class UserService(
         return UserProfileResponse.of(user, temperature, top3LikeTags)
     }
 
-    fun getUserTeams(userId: UUID): List<TeamSimpleResponse> {
-        val teamIds =
-            memberRepository
-                .findByUserIdOrderByRoleAscCreatedAtAsc(userId)
-                .map { it.teamId }
+    fun getUserTeams(
+        userId: UUID,
+        includeHidden: Boolean = false,
+    ): List<TeamSimpleResponse> {
+        val members =
+            if (includeHidden) {
+                memberRepository.findByUserIdOrderByRoleAscCreatedAtAsc(userId)
+            } else {
+                memberRepository.findByUserIdAndVisibleTrueOrderByRoleAscCreatedAtAsc(userId)
+            }
+
+        val teamIds = members.map { it.teamId }
         val teamById = teamRepository.findAllById(teamIds).associateBy { it.id }
 
-        return teamIds.mapNotNull { teamId ->
-            teamById[teamId]?.let { TeamSimpleResponse.from(it) }
+        return members.mapNotNull { member ->
+            teamById[member.teamId]?.let { team ->
+                TeamSimpleResponse.from(
+                    team = team,
+                    isVisible = if (includeHidden) member.isVisible else null,
+                )
+            }
         }
     }
 
     fun getUserProfileCompletion(user: User): UserProfileCompletionResponse = UserProfileCompletionResponse(user.isProfileComplete())
+
+    @Transactional
+    fun updateTeamVisibility(
+        userId: UUID,
+        teamId: Long,
+        isVisible: Boolean,
+    ): TeamSimpleResponse {
+        val member =
+            memberRepository.findByUserIdAndTeamId(userId, teamId)
+                ?: throw BusinessException(ErrorCode.ENTITY_NOT_FOUND, "Member not found")
+
+        member.updateVisibility(isVisible)
+
+        val team =
+            teamRepository.findByIdOrNull(teamId)
+                ?: throw BusinessException(ErrorCode.ENTITY_NOT_FOUND, "Team not found")
+
+        return TeamSimpleResponse.from(team, isVisible)
+    }
 
     @Transactional
     fun updateUser(

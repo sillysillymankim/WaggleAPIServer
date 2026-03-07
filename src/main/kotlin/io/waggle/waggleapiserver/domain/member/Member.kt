@@ -31,12 +31,18 @@ class Member(
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, columnDefinition = "VARCHAR(10)")
     var role: MemberRole = MemberRole.MEMBER,
+    @Column(name = "is_visible", nullable = false)
+    var isVisible: Boolean = true,
 ) : AuditingEntity() {
     val isLeader: Boolean
         get() = this.role == MemberRole.LEADER
 
     fun updateRole(role: MemberRole) {
         this.role = role
+    }
+
+    fun updateVisibility(isVisible: Boolean) {
+        this.isVisible = isVisible
     }
 
     fun checkMemberRole(requiredRole: MemberRole) {
