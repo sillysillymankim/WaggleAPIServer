@@ -113,7 +113,7 @@ class UserService(
             if (includeHidden) {
                 memberRepository.findByUserIdOrderByRoleAscCreatedAtAsc(userId)
             } else {
-                memberRepository.findByUserIdAndVisibleTrueOrderByRoleAscCreatedAtAsc(userId)
+                memberRepository.findByUserIdAndIsVisibleTrueOrderByRoleAscCreatedAtAsc(userId)
             }
 
         val teamIds = members.map { it.teamId }

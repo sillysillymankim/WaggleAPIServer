@@ -17,7 +17,7 @@ interface MemberRepository : JpaRepository<Member, Long> {
 
     fun findByUserIdOrderByRoleAscCreatedAtAsc(userId: UUID): List<Member>
 
-    fun findByUserIdAndVisibleTrueOrderByRoleAscCreatedAtAsc(userId: UUID): List<Member>
+    fun findByUserIdAndIsVisibleTrueOrderByRoleAscCreatedAtAsc(userId: UUID): List<Member>
 
     fun findByTeamIdOrderByRoleAscCreatedAtAsc(teamId: Long): List<Member>
 
