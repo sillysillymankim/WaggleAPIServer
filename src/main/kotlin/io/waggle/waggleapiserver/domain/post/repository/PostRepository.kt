@@ -23,9 +23,6 @@ interface PostRepository : JpaRepository<Post, Long> {
         AND (:#{#skills.empty} = true OR p.id IN (
             SELECT r2.postId FROM Recruitment r2 JOIN r2.skills s WHERE s IN :skills
         ))
-        ORDER BY
-            CASE WHEN :#{#sort.name()} = 'NEWEST' THEN p.id END DESC,
-            CASE WHEN :#{#sort.name()} = 'OLDEST' THEN p.id END ASC
         """,
     )
     fun findWithFilter(
