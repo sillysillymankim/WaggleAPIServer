@@ -96,6 +96,7 @@ class PostService(
                 q = query.q,
                 positions = query.positions ?: emptySet(),
                 skills = query.skills ?: emptySet(),
+                sort = query.sort,
                 pageable = PageRequest.of(0, cursorQuery.size + 1),
             )
 
