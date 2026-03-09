@@ -7,6 +7,7 @@ import io.waggle.waggleapiserver.domain.application.ApplicationStatus
 import io.waggle.waggleapiserver.domain.application.dto.request.ApplicationCreateRequest
 import io.waggle.waggleapiserver.domain.application.dto.response.ApplicationResponse
 import io.waggle.waggleapiserver.domain.application.repository.ApplicationRepository
+import io.waggle.waggleapiserver.domain.member.Member
 import io.waggle.waggleapiserver.domain.member.MemberRole
 import io.waggle.waggleapiserver.domain.member.repository.MemberRepository
 import io.waggle.waggleapiserver.domain.post.repository.PostRepository
@@ -111,12 +112,23 @@ class ApplicationService(
                     "Application not found: $applicationId",
                 )
 
-        val member =
+        val approver =
             memberRepository.findByUserIdAndTeamId(user.id, application.teamId)
                 ?: throw BusinessException(ErrorCode.ENTITY_NOT_FOUND, "Member not found")
-        member.checkMemberRole(MemberRole.MANAGER)
+        approver.checkMemberRole(MemberRole.MANAGER)
 
         application.updateStatus(ApplicationStatus.APPROVED)
+
+        if (!memberRepository.existsByUserIdAndTeamId(application.userId, application.teamId)) {
+            val member =
+                Member(
+                    userId = application.userId,
+                    teamId = application.teamId,
+                    position = application.position,
+                    role = MemberRole.MEMBER,
+                )
+            memberRepository.save(member)
+        }
 
         return ApplicationResponse.from(application)
     }
