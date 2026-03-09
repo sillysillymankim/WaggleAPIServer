@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.waggle.waggleapiserver.domain.member.Member
 import io.waggle.waggleapiserver.domain.member.MemberRole
 import io.waggle.waggleapiserver.domain.user.User
+import io.waggle.waggleapiserver.domain.user.enums.Skill
 import java.time.Instant
 import java.util.UUID
 
@@ -24,6 +25,8 @@ data class MemberResponse(
         example = "https://avatars.githubusercontent.com/u/112466204?s=80&v=4",
     )
     val profileImageUrl: String?,
+    @Schema(description = "사용자 스킬 목록")
+    val skills: Set<Skill>,
     @Schema(description = "멤버 합류일시", example = "2025-11-16T12:30:45.123456Z")
     val createdAt: Instant,
     @Schema(description = "멤버 수정일시", example = "2025-11-16T12:30:45.123456Z")
@@ -41,6 +44,7 @@ data class MemberResponse(
                 role = member.role,
                 username = user.username!!,
                 profileImageUrl = user.profileImageUrl,
+                skills = user.skills,
                 createdAt = member.createdAt,
                 updatedAt = member.updatedAt,
             )
