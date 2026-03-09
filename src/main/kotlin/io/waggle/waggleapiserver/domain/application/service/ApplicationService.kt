@@ -10,9 +10,13 @@ import io.waggle.waggleapiserver.domain.application.repository.ApplicationReposi
 import io.waggle.waggleapiserver.domain.member.Member
 import io.waggle.waggleapiserver.domain.member.MemberRole
 import io.waggle.waggleapiserver.domain.member.repository.MemberRepository
+import io.waggle.waggleapiserver.domain.memberreview.enums.ReviewType
+import io.waggle.waggleapiserver.domain.memberreview.repository.MemberReviewRepository
 import io.waggle.waggleapiserver.domain.post.repository.PostRepository
 import io.waggle.waggleapiserver.domain.recruitment.repository.RecruitmentRepository
+import io.waggle.waggleapiserver.domain.user.TemperatureCalculator
 import io.waggle.waggleapiserver.domain.user.User
+import io.waggle.waggleapiserver.domain.user.repository.UserRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -22,8 +26,11 @@ import org.springframework.transaction.annotation.Transactional
 class ApplicationService(
     private val applicationRepository: ApplicationRepository,
     private val memberRepository: MemberRepository,
+    private val memberReviewRepository: MemberReviewRepository,
     private val postRepository: PostRepository,
     private val recruitmentRepository: RecruitmentRepository,
+    private val userRepository: UserRepository,
+    private val temperatureCalculator: TemperatureCalculator,
 ) {
     @Transactional
     fun applyToTeam(
@@ -78,12 +85,23 @@ class ApplicationService(
         application.portfolioUrls.addAll(portfolioUrls)
         val savedApplication = applicationRepository.save(application)
 
-        return ApplicationResponse.from(savedApplication)
+        val likeCount = memberReviewRepository.countByRevieweeIdAndType(user.id, ReviewType.LIKE)
+        val dislikeCount =
+            memberReviewRepository.countByRevieweeIdAndType(user.id, ReviewType.DISLIKE)
+        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
+
+        return ApplicationResponse.of(savedApplication, user, temperature)
     }
 
     fun getUserApplications(user: User): List<ApplicationResponse> {
         val applications = applicationRepository.findByUserId(user.id)
-        return applications.map { ApplicationResponse.from(it) }
+
+        val likeCount = memberReviewRepository.countByRevieweeIdAndType(user.id, ReviewType.LIKE)
+        val dislikeCount =
+            memberReviewRepository.countByRevieweeIdAndType(user.id, ReviewType.DISLIKE)
+        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
+
+        return applications.map { ApplicationResponse.of(it, user, temperature) }
     }
 
     fun getTeamApplications(
@@ -96,8 +114,30 @@ class ApplicationService(
         member.checkMemberRole(MemberRole.MEMBER)
 
         val applications = applicationRepository.findByTeamId(teamId)
+        val applicantIds = applications.map { it.userId }.distinct()
+        val applicantById = userRepository.findAllById(applicantIds).associateBy { it.id }
 
-        return applications.map { ApplicationResponse.from(it) }
+        val reviewCounts = memberReviewRepository.countByRevieweeIdInGroupByType(applicantIds)
+        val temperatureByUserId =
+            applicantIds.associateWith { userId ->
+                val likeCount =
+                    reviewCounts.find { it.revieweeId == userId && it.type == ReviewType.LIKE }?.count
+                        ?: 0
+                val dislikeCount =
+                    reviewCounts.find { it.revieweeId == userId && it.type == ReviewType.DISLIKE }?.count
+                        ?: 0
+                temperatureCalculator.calculate(likeCount, dislikeCount)
+            }
+
+        return applications.map { application ->
+            val applicant =
+                applicantById[application.userId]
+                    ?: throw BusinessException(
+                        ErrorCode.ENTITY_NOT_FOUND,
+                        "User not found: ${application.userId}",
+                    )
+            ApplicationResponse.of(application, applicant, temperatureByUserId[applicant.id]!!)
+        }
     }
 
     @Transactional
@@ -130,7 +170,20 @@ class ApplicationService(
             memberRepository.save(member)
         }
 
-        return ApplicationResponse.from(application)
+        val applicant =
+            userRepository.findByIdOrNull(application.userId)
+                ?: throw BusinessException(
+                    ErrorCode.ENTITY_NOT_FOUND,
+                    "User not found: ${application.userId}",
+                )
+
+        val likeCount =
+            memberReviewRepository.countByRevieweeIdAndType(applicant.id, ReviewType.LIKE)
+        val dislikeCount =
+            memberReviewRepository.countByRevieweeIdAndType(applicant.id, ReviewType.DISLIKE)
+        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
+
+        return ApplicationResponse.of(application, applicant, temperature)
     }
 
     @Transactional
@@ -152,7 +205,20 @@ class ApplicationService(
 
         application.updateStatus(ApplicationStatus.REJECTED)
 
-        return ApplicationResponse.from(application)
+        val applicant =
+            userRepository.findByIdOrNull(application.userId)
+                ?: throw BusinessException(
+                    ErrorCode.ENTITY_NOT_FOUND,
+                    "User not found: ${application.userId}",
+                )
+
+        val likeCount =
+            memberReviewRepository.countByRevieweeIdAndType(applicant.id, ReviewType.LIKE)
+        val dislikeCount =
+            memberReviewRepository.countByRevieweeIdAndType(applicant.id, ReviewType.DISLIKE)
+        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
+
+        return ApplicationResponse.of(application, applicant, temperature)
     }
 
     @Transactional
