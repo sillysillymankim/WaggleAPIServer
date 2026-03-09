@@ -6,6 +6,9 @@ import io.waggle.waggleapiserver.domain.follow.Follow
 import io.waggle.waggleapiserver.domain.follow.dto.request.FollowToggleRequest
 import io.waggle.waggleapiserver.domain.follow.dto.response.FollowCountResponse
 import io.waggle.waggleapiserver.domain.follow.repository.FollowRepository
+import io.waggle.waggleapiserver.domain.memberreview.enums.ReviewType
+import io.waggle.waggleapiserver.domain.memberreview.repository.MemberReviewRepository
+import io.waggle.waggleapiserver.domain.user.TemperatureCalculator
 import io.waggle.waggleapiserver.domain.user.User
 import io.waggle.waggleapiserver.domain.user.dto.response.UserSimpleResponse
 import io.waggle.waggleapiserver.domain.user.repository.UserRepository
@@ -17,7 +20,9 @@ import java.util.UUID
 @Transactional(readOnly = true)
 class FollowService(
     private val followRepository: FollowRepository,
+    private val memberReviewRepository: MemberReviewRepository,
     private val userRepository: UserRepository,
+    private val temperatureCalculator: TemperatureCalculator,
 ) {
     @Transactional
     fun toggleFollow(
@@ -56,6 +61,19 @@ class FollowService(
         val followeeIds = follows.map { it.followeeId }
         val userById = userRepository.findAllById(followeeIds).associateBy { it.id }
 
+        // Temperature 일괄 조회
+        val reviewCounts = memberReviewRepository.countByRevieweeIdInGroupByType(followeeIds)
+        val temperatureByUserId =
+            followeeIds.associateWith { uid ->
+                val likeCount =
+                    reviewCounts.find { it.revieweeId == uid && it.type == ReviewType.LIKE }?.count
+                        ?: 0
+                val dislikeCount =
+                    reviewCounts.find { it.revieweeId == uid && it.type == ReviewType.DISLIKE }?.count
+                        ?: 0
+                temperatureCalculator.calculate(likeCount, dislikeCount)
+            }
+
         return follows.map { follow ->
             val user =
                 userById[follow.followeeId]
@@ -63,7 +81,7 @@ class FollowService(
                         ErrorCode.ENTITY_NOT_FOUND,
                         "User not found: ${follow.followerId}",
                     )
-            UserSimpleResponse.from(user)
+            UserSimpleResponse.of(user, temperatureByUserId[user.id]!!)
         }
     }
 
@@ -73,6 +91,19 @@ class FollowService(
         val followerIds = follows.map { it.followerId }
         val userById = userRepository.findAllById(followerIds).associateBy { it.id }
 
+        // Temperature 일괄 조회
+        val reviewCounts = memberReviewRepository.countByRevieweeIdInGroupByType(followerIds)
+        val temperatureByUserId =
+            followerIds.associateWith { uid ->
+                val likeCount =
+                    reviewCounts.find { it.revieweeId == uid && it.type == ReviewType.LIKE }?.count
+                        ?: 0
+                val dislikeCount =
+                    reviewCounts.find { it.revieweeId == uid && it.type == ReviewType.DISLIKE }?.count
+                        ?: 0
+                temperatureCalculator.calculate(likeCount, dislikeCount)
+            }
+
         return follows.map { follow ->
             val user =
                 userById[follow.followerId]
@@ -80,7 +111,7 @@ class FollowService(
                         ErrorCode.ENTITY_NOT_FOUND,
                         "User not found: ${follow.followeeId}",
                     )
-            UserSimpleResponse.from(user)
+            UserSimpleResponse.of(user, temperatureByUserId[user.id]!!)
         }
     }
 

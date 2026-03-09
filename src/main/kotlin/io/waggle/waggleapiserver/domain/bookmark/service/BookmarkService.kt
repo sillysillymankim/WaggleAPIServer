@@ -10,12 +10,15 @@ import io.waggle.waggleapiserver.domain.bookmark.dto.response.BookmarkResponse
 import io.waggle.waggleapiserver.domain.bookmark.dto.response.BookmarkToggleResponse
 import io.waggle.waggleapiserver.domain.bookmark.repository.BookmarkRepository
 import io.waggle.waggleapiserver.domain.member.repository.MemberRepository
+import io.waggle.waggleapiserver.domain.memberreview.enums.ReviewType
+import io.waggle.waggleapiserver.domain.memberreview.repository.MemberReviewRepository
 import io.waggle.waggleapiserver.domain.post.dto.response.PostSimpleResponse
 import io.waggle.waggleapiserver.domain.post.repository.PostRepository
 import io.waggle.waggleapiserver.domain.recruitment.dto.response.RecruitmentResponse
 import io.waggle.waggleapiserver.domain.recruitment.repository.RecruitmentRepository
 import io.waggle.waggleapiserver.domain.team.dto.response.TeamResponse
 import io.waggle.waggleapiserver.domain.team.repository.TeamRepository
+import io.waggle.waggleapiserver.domain.user.TemperatureCalculator
 import io.waggle.waggleapiserver.domain.user.User
 import io.waggle.waggleapiserver.domain.user.dto.response.UserSimpleResponse
 import io.waggle.waggleapiserver.domain.user.repository.UserRepository
@@ -27,10 +30,12 @@ import org.springframework.transaction.annotation.Transactional
 class BookmarkService(
     private val bookmarkRepository: BookmarkRepository,
     private val memberRepository: MemberRepository,
+    private val memberReviewRepository: MemberReviewRepository,
     private val postRepository: PostRepository,
     private val recruitmentRepository: RecruitmentRepository,
     private val teamRepository: TeamRepository,
     private val userRepository: UserRepository,
+    private val temperatureCalculator: TemperatureCalculator,
 ) {
     fun toggleBookmark(
         request: BookmarkToggleRequest,
@@ -68,6 +73,19 @@ class BookmarkService(
                 val posts = postRepository.findByIdInOrderByCreatedAtDesc(targetIds)
                 val authorIds = posts.map { it.userId }.distinct()
                 val authorById = userRepository.findAllById(authorIds).associateBy { it.id }
+
+                val reviewCounts = memberReviewRepository.countByRevieweeIdInGroupByType(authorIds)
+                val temperatureByUserId =
+                    authorIds.associateWith { userId ->
+                        val likeCount =
+                            reviewCounts.find { it.revieweeId == userId && it.type == ReviewType.LIKE }?.count
+                                ?: 0
+                        val dislikeCount =
+                            reviewCounts.find { it.revieweeId == userId && it.type == ReviewType.DISLIKE }?.count
+                                ?: 0
+                        temperatureCalculator.calculate(likeCount, dislikeCount)
+                    }
+
                 val recruitmentsByPostId =
                     recruitmentRepository.findByPostIdIn(posts.map { it.id }).groupBy { it.postId }
                 posts.map { post ->
@@ -84,7 +102,7 @@ class BookmarkService(
                         ).map { RecruitmentResponse.from(it) }
                     PostSimpleResponse.of(
                         post,
-                        UserSimpleResponse.from(author),
+                        UserSimpleResponse.of(author, temperatureByUserId[author.id]!!),
                         recruitments,
                     )
                 }

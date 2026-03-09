@@ -64,7 +64,11 @@ class UserService(
         )
         val savedUser = userRepository.save(user)
 
-        return UserDetailResponse.from(savedUser)
+        val likeCount = memberReviewRepository.countByRevieweeIdAndType(savedUser.id, ReviewType.LIKE)
+        val dislikeCount = memberReviewRepository.countByRevieweeIdAndType(savedUser.id, ReviewType.DISLIKE)
+        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
+
+        return UserDetailResponse.of(savedUser, temperature)
     }
 
     fun generateProfileImagePresignedUrl(
@@ -185,6 +189,10 @@ class UserService(
         )
         val savedUser = userRepository.save(user)
 
-        return UserDetailResponse.from(savedUser)
+        val likeCount = memberReviewRepository.countByRevieweeIdAndType(savedUser.id, ReviewType.LIKE)
+        val dislikeCount = memberReviewRepository.countByRevieweeIdAndType(savedUser.id, ReviewType.DISLIKE)
+        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
+
+        return UserDetailResponse.of(savedUser, temperature)
     }
 }

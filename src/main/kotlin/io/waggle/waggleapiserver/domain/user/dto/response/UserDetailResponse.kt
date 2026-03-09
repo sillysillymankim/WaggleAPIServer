@@ -28,24 +28,30 @@ data class UserDetailResponse(
     val bio: String?,
     @Schema(description = "포트폴리오 URL 목록", example = "[\"https://github.com/user\"]")
     val portfolioUrls: List<String>,
+    @Schema(description = "협업 온도", example = "36.5")
+    val temperature: Double,
     @Schema(description = "사용자 생성일시", example = "2025-11-16T12:30:45.123456Z")
     val createdAt: Instant,
     @Schema(description = "사용자 수정일시", example = "2025-11-16T12:30:45.123456Z")
     val updatedAt: Instant,
 ) {
     companion object {
-        fun from(user: User): UserDetailResponse =
+        fun of(
+            user: User,
+            temperature: Double,
+        ): UserDetailResponse =
             UserDetailResponse(
-                user.id,
-                user.username!!,
-                user.email,
-                user.profileImageUrl,
-                user.position!!,
-                user.skills,
-                user.bio,
-                user.portfolioUrls,
-                user.createdAt,
-                user.updatedAt,
+                userId = user.id,
+                username = user.username!!,
+                email = user.email,
+                profileImageUrl = user.profileImageUrl,
+                position = user.position!!,
+                skills = user.skills,
+                bio = user.bio,
+                portfolioUrls = user.portfolioUrls,
+                temperature = temperature,
+                createdAt = user.createdAt,
+                updatedAt = user.updatedAt,
             )
     }
 }

@@ -30,7 +30,7 @@ data class UserProfileResponse(
     val skills: Set<Skill>,
     @Schema(description = "포트폴리오 URL 목록", example = "[\"https://github.com/user\"]")
     val portfolioUrls: List<String>,
-    @Schema(description = "협업온도", example = "36.5")
+    @Schema(description = "협업 온도", example = "36.5")
     val temperature: Double,
     @Schema(description = "좋아요 태그 상위 3개")
     val topLikeTags: List<TagCount>,

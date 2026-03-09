@@ -7,7 +7,10 @@ import io.waggle.waggleapiserver.common.exception.ErrorCode
 import io.waggle.waggleapiserver.domain.application.repository.ApplicationRepository
 import io.waggle.waggleapiserver.domain.member.MemberRole
 import io.waggle.waggleapiserver.domain.member.repository.MemberRepository
+import io.waggle.waggleapiserver.domain.memberreview.enums.ReviewType
+import io.waggle.waggleapiserver.domain.memberreview.repository.MemberReviewRepository
 import io.waggle.waggleapiserver.domain.post.Post
+import io.waggle.waggleapiserver.domain.post.PostSort
 import io.waggle.waggleapiserver.domain.post.dto.request.PostGetQuery
 import io.waggle.waggleapiserver.domain.post.dto.request.PostUpsertRequest
 import io.waggle.waggleapiserver.domain.post.dto.response.PostDetailResponse
@@ -18,10 +21,10 @@ import io.waggle.waggleapiserver.domain.recruitment.dto.response.RecruitmentResp
 import io.waggle.waggleapiserver.domain.recruitment.repository.RecruitmentRepository
 import io.waggle.waggleapiserver.domain.team.dto.response.TeamResponse
 import io.waggle.waggleapiserver.domain.team.repository.TeamRepository
+import io.waggle.waggleapiserver.domain.user.TemperatureCalculator
 import io.waggle.waggleapiserver.domain.user.User
 import io.waggle.waggleapiserver.domain.user.dto.response.UserSimpleResponse
 import io.waggle.waggleapiserver.domain.user.repository.UserRepository
-import io.waggle.waggleapiserver.domain.post.PostSort
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.repository.findByIdOrNull
@@ -33,10 +36,12 @@ import org.springframework.transaction.annotation.Transactional
 class PostService(
     private val applicationRepository: ApplicationRepository,
     private val memberRepository: MemberRepository,
+    private val memberReviewRepository: MemberReviewRepository,
     private val postRepository: PostRepository,
     private val recruitmentRepository: RecruitmentRepository,
     private val teamRepository: TeamRepository,
     private val userRepository: UserRepository,
+    private val temperatureCalculator: TemperatureCalculator,
 ) {
     @Transactional
     fun createPost(
@@ -79,9 +84,14 @@ class PostService(
                 ?: throw BusinessException(ErrorCode.ENTITY_NOT_FOUND, "Team not found: $teamId")
         val memberCount = memberRepository.countByTeamId(teamId)
 
+        val likeCount = memberReviewRepository.countByRevieweeIdAndType(user.id, ReviewType.LIKE)
+        val dislikeCount =
+            memberReviewRepository.countByRevieweeIdAndType(user.id, ReviewType.DISLIKE)
+        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
+
         return PostDetailResponse.of(
             savedPost,
-            UserSimpleResponse.from(user),
+            UserSimpleResponse.of(user, temperature),
             TeamResponse.of(team, memberCount),
             savedRecruitments.map { RecruitmentResponse.from(it) },
         )
@@ -92,10 +102,11 @@ class PostService(
         cursorQuery: CursorGetQuery,
         user: User?,
     ): CursorResponse<PostSimpleResponse> {
-        val direction = when (query.sort) {
-            PostSort.NEWEST -> Sort.Direction.DESC
-            PostSort.OLDEST -> Sort.Direction.ASC
-        }
+        val direction =
+            when (query.sort) {
+                PostSort.NEWEST -> Sort.Direction.DESC
+                PostSort.OLDEST -> Sort.Direction.ASC
+            }
         val posts =
             postRepository.findWithFilter(
                 cursor = cursorQuery.cursor,
@@ -112,6 +123,19 @@ class PostService(
 
         val authorIds = content.map { it.userId }.distinct()
         val authorById = userRepository.findAllById(authorIds).associateBy { it.id }
+
+        // Temperature 일괄 조회
+        val reviewCounts = memberReviewRepository.countByRevieweeIdInGroupByType(authorIds)
+        val temperatureByUserId =
+            authorIds.associateWith { userId ->
+                val likeCount =
+                    reviewCounts.find { it.revieweeId == userId && it.type == ReviewType.LIKE }?.count
+                        ?: 0
+                val dislikeCount =
+                    reviewCounts.find { it.revieweeId == userId && it.type == ReviewType.DISLIKE }?.count
+                        ?: 0
+                temperatureCalculator.calculate(likeCount, dislikeCount)
+            }
 
         val postIds = content.map { it.id }
         val recruitmentsByPostId =
@@ -144,12 +168,20 @@ class PostService(
                             "User not found: ${post.userId}",
                         )
                 val recruitments =
-                    (recruitmentsByPostId[post.id] ?: emptyList()).map { RecruitmentResponse.from(it) }
+                    (
+                        recruitmentsByPostId[post.id]
+                            ?: emptyList()
+                    ).map { RecruitmentResponse.from(it) }
                 val applicantCount =
-                    if (post.teamId in memberTeamIdSet) applicantCountByPostId[post.id] ?: 0 else null
+                    if (post.teamId in memberTeamIdSet) {
+                        applicantCountByPostId[post.id]
+                            ?: 0
+                    } else {
+                        null
+                    }
                 PostSimpleResponse.of(
                     post,
-                    UserSimpleResponse.from(author),
+                    UserSimpleResponse.of(author, temperatureByUserId[author.id]!!),
                     recruitments,
                     applicantCount,
                 )
@@ -195,9 +227,14 @@ class PostService(
 
         val memberCount = memberRepository.countByTeamId(team.id)
 
+        val likeCount = memberReviewRepository.countByRevieweeIdAndType(author.id, ReviewType.LIKE)
+        val dislikeCount =
+            memberReviewRepository.countByRevieweeIdAndType(author.id, ReviewType.DISLIKE)
+        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
+
         return PostDetailResponse.of(
             post,
-            UserSimpleResponse.from(author),
+            UserSimpleResponse.of(author, temperature),
             TeamResponse.of(team, memberCount),
             recruitments,
             applicantCount,
@@ -212,6 +249,19 @@ class PostService(
 
         val authorIds = posts.map { it.userId }.distinct()
         val authorById = userRepository.findAllById(authorIds).associateBy { it.id }
+
+        // Temperature 일괄 조회
+        val reviewCounts = memberReviewRepository.countByRevieweeIdInGroupByType(authorIds)
+        val temperatureByUserId =
+            authorIds.associateWith { userId ->
+                val likeCount =
+                    reviewCounts.find { it.revieweeId == userId && it.type == ReviewType.LIKE }?.count
+                        ?: 0
+                val dislikeCount =
+                    reviewCounts.find { it.revieweeId == userId && it.type == ReviewType.DISLIKE }?.count
+                        ?: 0
+                temperatureCalculator.calculate(likeCount, dislikeCount)
+            }
 
         val postIds = posts.map { it.id }
         val recruitmentsByPostId =
@@ -241,7 +291,7 @@ class PostService(
             val applicantCount = if (isMember) applicantCountByPostId[post.id] ?: 0 else null
             PostSimpleResponse.of(
                 post,
-                UserSimpleResponse.from(author),
+                UserSimpleResponse.of(author, temperatureByUserId[author.id]!!),
                 recruitments,
                 applicantCount,
             )
@@ -286,9 +336,14 @@ class PostService(
                 )
         val memberCount = memberRepository.countByTeamId(post.teamId)
 
+        val likeCount = memberReviewRepository.countByRevieweeIdAndType(user.id, ReviewType.LIKE)
+        val dislikeCount =
+            memberReviewRepository.countByRevieweeIdAndType(user.id, ReviewType.DISLIKE)
+        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
+
         return PostDetailResponse.of(
             post,
-            UserSimpleResponse.from(user),
+            UserSimpleResponse.of(user, temperature),
             TeamResponse.of(team, memberCount),
             savedRecruitments.map { RecruitmentResponse.from(it) },
         )

@@ -27,6 +27,18 @@ interface MemberReviewRepository : JpaRepository<MemberReview, Long> {
 
     @Query(
         """
+        SELECT mr.revieweeId AS revieweeId, mr.type AS type, COUNT(mr) AS count
+        FROM MemberReview mr
+        WHERE mr.revieweeId IN :revieweeIds
+        GROUP BY mr.revieweeId, mr.type
+        """,
+    )
+    fun countByRevieweeIdInGroupByType(
+        @Param("revieweeIds") revieweeIds: List<UUID>,
+    ): List<MemberReviewCount>
+
+    @Query(
+        """
         SELECT t AS tag, COUNT(t) AS count
         FROM MemberReview mr JOIN mr.tags t
         WHERE mr.revieweeId = :revieweeId AND mr.type = :type
@@ -43,5 +55,11 @@ interface MemberReviewRepository : JpaRepository<MemberReview, Long> {
 
 interface MemberReviewTagCount {
     val tag: ReviewTag
+    val count: Long
+}
+
+interface MemberReviewCount {
+    val revieweeId: UUID
+    val type: ReviewType
     val count: Long
 }
