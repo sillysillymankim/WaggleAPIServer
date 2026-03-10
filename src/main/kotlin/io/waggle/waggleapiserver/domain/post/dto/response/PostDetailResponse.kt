@@ -25,8 +25,6 @@ data class PostDetailResponse(
     val isRecruiting: Boolean,
     @Schema(description = "모집 정보 목록")
     val recruitments: List<RecruitmentResponse>,
-    @Schema(description = "지원자 수 (팀 멤버만 조회 가능)")
-    val applicantCount: Int? = null,
     @Schema(description = "모집글 생성일시", example = "2025-11-16T12:30:45.123456Z")
     val createdAt: Instant,
     @Schema(description = "모집글 수정일시", example = "2025-11-16T12:30:45.123456Z")
@@ -38,7 +36,6 @@ data class PostDetailResponse(
             user: UserSimpleResponse,
             team: TeamResponse,
             recruitments: List<RecruitmentResponse> = emptyList(),
-            applicantCount: Int? = null,
         ): PostDetailResponse =
             PostDetailResponse(
                 postId = post.id,
@@ -48,7 +45,6 @@ data class PostDetailResponse(
                 team = team,
                 isRecruiting = recruitments.any { it.status == RecruitmentStatus.RECRUITING },
                 recruitments = recruitments,
-                applicantCount = applicantCount,
                 createdAt = post.createdAt,
                 updatedAt = post.updatedAt,
             )
