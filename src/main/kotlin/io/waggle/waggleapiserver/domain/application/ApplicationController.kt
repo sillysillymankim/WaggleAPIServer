@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
@@ -20,6 +21,16 @@ import org.springframework.web.bind.annotation.RestController
 class ApplicationController(
     private val applicationService: ApplicationService,
 ) {
+    @Operation(
+        summary = "팀 지원 읽음 처리",
+        description = "팀 관리자가 지원을 읽음 처리함",
+    )
+    @PostMapping("/{applicationId}/read")
+    fun markApplicationAsRead(
+        @PathVariable applicationId: Long,
+        @CurrentUser user: User,
+    ): ApplicationResponse = applicationService.markApplicationAsRead(applicationId, user)
+
     @Operation(
         summary = "팀 지원 승인",
         description = "팀 관리자가 지원자를 승인함",
