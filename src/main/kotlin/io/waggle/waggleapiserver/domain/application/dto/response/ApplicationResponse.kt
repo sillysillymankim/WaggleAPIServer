@@ -44,24 +44,21 @@ data class ApplicationResponse(
         val userId: UUID,
         @Schema(description = "사용자명", example = "testUser")
         val username: String,
+        @Schema(description = "협업 온도", example = "36.5")
+        val temperature: Double,
         @Schema(
             description = "프로필 이미지 URL",
             example = "https://avatars.githubusercontent.com/u/112466204?s=80&v=4",
         )
         val profileImageUrl: String?,
-        @Schema(description = "협업 온도", example = "36.5")
-        val temperature: Double,
     ) {
         companion object {
-            fun of(
-                user: User,
-                temperature: Double,
-            ): ApplicantResponse =
+            fun from(user: User): ApplicantResponse =
                 ApplicantResponse(
                     userId = user.id,
                     username = user.username!!,
+                    temperature = user.temperature,
                     profileImageUrl = user.profileImageUrl,
-                    temperature = temperature,
                 )
         }
     }
@@ -70,7 +67,6 @@ data class ApplicationResponse(
         fun of(
             application: Application,
             user: User? = null,
-            temperature: Double? = null,
             isRead: Boolean? = null,
         ): ApplicationResponse =
             ApplicationResponse(
@@ -79,7 +75,7 @@ data class ApplicationResponse(
                 status = application.status,
                 teamId = application.teamId,
                 postId = application.postId,
-                user = if (user != null && temperature != null) ApplicantResponse.of(user, temperature) else null,
+                user = if (user != null) ApplicantResponse.from(user) else null,
                 isRead = isRead,
                 detail = application.detail,
                 portfolioUrls = application.portfolioUrls.toList(),

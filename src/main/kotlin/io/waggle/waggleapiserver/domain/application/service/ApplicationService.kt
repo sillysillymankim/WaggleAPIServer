@@ -14,11 +14,8 @@ import io.waggle.waggleapiserver.domain.application.repository.ApplicationReposi
 import io.waggle.waggleapiserver.domain.member.Member
 import io.waggle.waggleapiserver.domain.member.MemberRole
 import io.waggle.waggleapiserver.domain.member.repository.MemberRepository
-import io.waggle.waggleapiserver.domain.memberreview.enums.ReviewType
-import io.waggle.waggleapiserver.domain.memberreview.repository.MemberReviewRepository
 import io.waggle.waggleapiserver.domain.post.repository.PostRepository
 import io.waggle.waggleapiserver.domain.recruitment.repository.RecruitmentRepository
-import io.waggle.waggleapiserver.domain.user.TemperatureCalculator
 import io.waggle.waggleapiserver.domain.user.User
 import io.waggle.waggleapiserver.domain.user.repository.UserRepository
 import org.springframework.data.domain.PageRequest
@@ -32,11 +29,9 @@ class ApplicationService(
     private val applicationRepository: ApplicationRepository,
     private val applicationReadRepository: ApplicationReadRepository,
     private val memberRepository: MemberRepository,
-    private val memberReviewRepository: MemberReviewRepository,
     private val postRepository: PostRepository,
     private val recruitmentRepository: RecruitmentRepository,
     private val userRepository: UserRepository,
-    private val temperatureCalculator: TemperatureCalculator,
 ) {
     @Transactional
     fun applyToTeam(
@@ -127,13 +122,7 @@ class ApplicationService(
                     "User not found: ${application.userId}",
                 )
 
-        val likeCount =
-            memberReviewRepository.countByRevieweeIdAndType(applicant.id, ReviewType.LIKE)
-        val dislikeCount =
-            memberReviewRepository.countByRevieweeIdAndType(applicant.id, ReviewType.DISLIKE)
-        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
-
-        return ApplicationResponse.of(application, applicant, temperature, isRead = true)
+        return ApplicationResponse.of(application, applicant, isRead = true)
     }
 
     fun getUserApplications(user: User): List<ApplicationResponse> {
@@ -178,18 +167,6 @@ class ApplicationService(
         val applicantIds = slicedApplications.map { it.userId }.distinct()
         val applicantById = userRepository.findAllById(applicantIds).associateBy { it.id }
 
-        val reviewCounts = memberReviewRepository.countByRevieweeIdInGroupByType(applicantIds)
-        val temperatureByUserId =
-            applicantIds.associateWith { userId ->
-                val likeCount =
-                    reviewCounts.find { it.revieweeId == userId && it.type == ReviewType.LIKE }?.count
-                        ?: 0
-                val dislikeCount =
-                    reviewCounts.find { it.revieweeId == userId && it.type == ReviewType.DISLIKE }?.count
-                        ?: 0
-                temperatureCalculator.calculate(likeCount, dislikeCount)
-            }
-
         val readApplicationIdSet =
             applicationReadRepository
                 .findReadApplicationIds(user.id, slicedApplications.map { it.id })
@@ -206,7 +183,6 @@ class ApplicationService(
                 ApplicationResponse.of(
                     application,
                     applicant,
-                    temperatureByUserId[applicant.id]!!,
                     isRead = readApplicationIdSet.contains(application.id),
                 )
             }
@@ -255,13 +231,7 @@ class ApplicationService(
                     "User not found: ${application.userId}",
                 )
 
-        val likeCount =
-            memberReviewRepository.countByRevieweeIdAndType(applicant.id, ReviewType.LIKE)
-        val dislikeCount =
-            memberReviewRepository.countByRevieweeIdAndType(applicant.id, ReviewType.DISLIKE)
-        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
-
-        return ApplicationResponse.of(application, applicant, temperature)
+        return ApplicationResponse.of(application, applicant)
     }
 
     @Transactional
@@ -290,13 +260,7 @@ class ApplicationService(
                     "User not found: ${application.userId}",
                 )
 
-        val likeCount =
-            memberReviewRepository.countByRevieweeIdAndType(applicant.id, ReviewType.LIKE)
-        val dislikeCount =
-            memberReviewRepository.countByRevieweeIdAndType(applicant.id, ReviewType.DISLIKE)
-        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
-
-        return ApplicationResponse.of(application, applicant, temperature)
+        return ApplicationResponse.of(application, applicant)
     }
 
     @Transactional

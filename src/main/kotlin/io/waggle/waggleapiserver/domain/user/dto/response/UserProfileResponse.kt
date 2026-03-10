@@ -17,6 +17,8 @@ data class UserProfileResponse(
     val username: String,
     @Schema(description = "이메일", example = "testUser@gmail.com")
     val email: String,
+    @Schema(description = "협업 온도", example = "36.5")
+    val temperature: Double,
     @Schema(
         description = "프로필 이미지 URL",
         example = "https://avatars.githubusercontent.com/u/112466204?s=80&v=4",
@@ -30,8 +32,6 @@ data class UserProfileResponse(
     val skills: Set<Skill>,
     @Schema(description = "포트폴리오 URL 목록", example = "[\"https://github.com/user\"]")
     val portfolioUrls: List<String>,
-    @Schema(description = "협업 온도", example = "36.5")
-    val temperature: Double,
     @Schema(description = "좋아요 태그 상위 3개")
     val topLikeTags: List<TagCount>,
     @Schema(description = "사용자 생성일시", example = "2025-11-16T12:30:45.123456Z")
@@ -51,19 +51,18 @@ data class UserProfileResponse(
     companion object {
         fun of(
             user: User,
-            temperature: Double,
             topLikeTags: List<MemberReviewTagCount>,
         ): UserProfileResponse =
             UserProfileResponse(
                 userId = user.id,
                 username = user.username!!,
                 email = user.email,
+                temperature = user.temperature,
                 profileImageUrl = user.profileImageUrl,
                 position = user.position!!,
                 bio = user.bio,
                 skills = user.skills.toSet(),
                 portfolioUrls = user.portfolioUrls.toList(),
-                temperature = temperature,
                 topLikeTags = topLikeTags.map { TagCount.from(it) },
                 createdAt = user.createdAt,
                 updatedAt = user.updatedAt,

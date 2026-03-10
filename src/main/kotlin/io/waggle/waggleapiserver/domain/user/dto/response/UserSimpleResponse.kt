@@ -13,6 +13,8 @@ data class UserSimpleResponse(
     val userId: UUID,
     @Schema(description = "사용자명", example = "testUser")
     val username: String,
+    @Schema(description = "협업 온도", example = "36.5")
+    val temperature: Double,
     @Schema(
         description = "프로필 이미지 URL",
         example = "https://avatars.githubusercontent.com/u/112466204?s=80&v=4",
@@ -22,25 +24,20 @@ data class UserSimpleResponse(
     val position: Position,
     @Schema(description = "보유 스킬", example = "[\"JAVA\", \"SPRING\"]")
     val skills: Set<Skill>,
-    @Schema(description = "협업 온도", example = "36.5")
-    val temperature: Double,
     @Schema(description = "사용자 생성일시", example = "2025-11-16T12:30:45.123456Z")
     val createdAt: Instant,
     @Schema(description = "사용자 수정일시", example = "2025-11-16T12:30:45.123456Z")
     val updatedAt: Instant,
 ) {
     companion object {
-        fun of(
-            user: User,
-            temperature: Double,
-        ): UserSimpleResponse =
+        fun from(user: User): UserSimpleResponse =
             UserSimpleResponse(
                 userId = user.id,
                 username = user.username!!,
+                temperature = user.temperature,
                 profileImageUrl = user.profileImageUrl,
                 position = user.position!!,
                 skills = user.skills,
-                temperature = temperature,
                 createdAt = user.createdAt,
                 updatedAt = user.updatedAt,
             )

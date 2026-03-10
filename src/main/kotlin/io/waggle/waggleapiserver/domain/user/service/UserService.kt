@@ -11,7 +11,6 @@ import io.waggle.waggleapiserver.domain.memberreview.enums.ReviewType
 import io.waggle.waggleapiserver.domain.memberreview.repository.MemberReviewRepository
 import io.waggle.waggleapiserver.domain.team.dto.response.TeamResponse
 import io.waggle.waggleapiserver.domain.team.repository.TeamRepository
-import io.waggle.waggleapiserver.domain.user.TemperatureCalculator
 import io.waggle.waggleapiserver.domain.user.User
 import io.waggle.waggleapiserver.domain.user.dto.request.MemberUpdateVisibilityRequest
 import io.waggle.waggleapiserver.domain.user.dto.request.UserSetupProfileRequest
@@ -37,7 +36,6 @@ class UserService(
     private val memberReviewRepository: MemberReviewRepository,
     private val teamRepository: TeamRepository,
     private val userRepository: UserRepository,
-    private val temperatureCalculator: TemperatureCalculator,
 ) {
     @Transactional
     fun setupProfile(
@@ -64,11 +62,7 @@ class UserService(
         )
         val savedUser = userRepository.save(user)
 
-        val likeCount = memberReviewRepository.countByRevieweeIdAndType(savedUser.id, ReviewType.LIKE)
-        val dislikeCount = memberReviewRepository.countByRevieweeIdAndType(savedUser.id, ReviewType.DISLIKE)
-        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
-
-        return UserDetailResponse.of(savedUser, temperature)
+        return UserDetailResponse.from(savedUser)
     }
 
     fun generateProfileImagePresignedUrl(
@@ -96,10 +90,6 @@ class UserService(
     fun getUserProfile(user: User): UserProfileResponse {
         user.checkProfileComplete()
 
-        val likeCount = memberReviewRepository.countByRevieweeIdAndType(user.id, ReviewType.LIKE)
-        val dislikeCount =
-            memberReviewRepository.countByRevieweeIdAndType(user.id, ReviewType.DISLIKE)
-        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
         val top3LikeTags =
             memberReviewRepository.countTagsByRevieweeIdAndType(
                 user.id,
@@ -107,7 +97,7 @@ class UserService(
                 PageRequest.of(0, 3),
             )
 
-        return UserProfileResponse.of(user, temperature, top3LikeTags)
+        return UserProfileResponse.of(user, top3LikeTags)
     }
 
     fun getUserTeams(
@@ -189,10 +179,6 @@ class UserService(
         )
         val savedUser = userRepository.save(user)
 
-        val likeCount = memberReviewRepository.countByRevieweeIdAndType(savedUser.id, ReviewType.LIKE)
-        val dislikeCount = memberReviewRepository.countByRevieweeIdAndType(savedUser.id, ReviewType.DISLIKE)
-        val temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
-
-        return UserDetailResponse.of(savedUser, temperature)
+        return UserDetailResponse.from(savedUser)
     }
 }
