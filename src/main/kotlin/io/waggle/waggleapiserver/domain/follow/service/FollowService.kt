@@ -5,6 +5,7 @@ import io.waggle.waggleapiserver.common.exception.ErrorCode
 import io.waggle.waggleapiserver.domain.follow.Follow
 import io.waggle.waggleapiserver.domain.follow.dto.request.FollowToggleRequest
 import io.waggle.waggleapiserver.domain.follow.dto.response.FollowCountResponse
+import io.waggle.waggleapiserver.domain.follow.dto.response.FollowToggleResponse
 import io.waggle.waggleapiserver.domain.follow.repository.FollowRepository
 import io.waggle.waggleapiserver.domain.user.User
 import io.waggle.waggleapiserver.domain.user.dto.response.UserSimpleResponse
@@ -23,7 +24,7 @@ class FollowService(
     fun toggleFollow(
         request: FollowToggleRequest,
         user: User,
-    ): Boolean {
+    ): FollowToggleResponse {
         val followeeId = request.userId
         val followerId = user.id
 
@@ -35,19 +36,18 @@ class FollowService(
             throw BusinessException(ErrorCode.ENTITY_NOT_FOUND, "User not found: $followeeId")
         }
 
-        if (followRepository.existsByFollowerIdAndFolloweeId(followerId, followeeId)) {
+        return if (followRepository.existsByFollowerIdAndFolloweeId(followerId, followeeId)) {
             followRepository.deleteByFollowerIdAndFolloweeId(followerId, followeeId)
-            return false
+            FollowToggleResponse(isFollowing = false)
+        } else {
+            val follow =
+                Follow(
+                    followerId = followerId,
+                    followeeId = followeeId,
+                )
+            followRepository.save(follow)
+            FollowToggleResponse(isFollowing = true)
         }
-
-        val follow =
-            Follow(
-                followerId = followerId,
-                followeeId = followeeId,
-            )
-        followRepository.save(follow)
-
-        return true
     }
 
     fun getUserFollowees(userId: UUID): List<UserSimpleResponse> {
