@@ -7,8 +7,10 @@ import io.waggle.waggleapiserver.domain.memberreview.MemberReview
 import io.waggle.waggleapiserver.domain.memberreview.dto.request.MemberReviewUpsertRequest
 import io.waggle.waggleapiserver.domain.memberreview.dto.response.MemberReviewResponse
 import io.waggle.waggleapiserver.domain.memberreview.enums.ReviewTag
+import io.waggle.waggleapiserver.domain.memberreview.enums.ReviewType
 import io.waggle.waggleapiserver.domain.memberreview.repository.MemberReviewRepository
 import io.waggle.waggleapiserver.domain.team.repository.TeamRepository
+import io.waggle.waggleapiserver.domain.user.TemperatureCalculator
 import io.waggle.waggleapiserver.domain.user.User
 import io.waggle.waggleapiserver.domain.user.repository.UserRepository
 import org.springframework.data.repository.findByIdOrNull
@@ -23,6 +25,7 @@ class MemberReviewService(
     private val memberReviewRepository: MemberReviewRepository,
     private val teamRepository: TeamRepository,
     private val userRepository: UserRepository,
+    private val temperatureCalculator: TemperatureCalculator,
 ) {
     @Transactional
     fun upsertReview(
@@ -86,6 +89,12 @@ class MemberReviewService(
                     ErrorCode.ENTITY_NOT_FOUND,
                     "User not found: ${revieweeMember.userId}",
                 )
+
+        val likeCount =
+            memberReviewRepository.countByRevieweeIdAndType(revieweeUser.id, ReviewType.LIKE)
+        val dislikeCount =
+            memberReviewRepository.countByRevieweeIdAndType(revieweeUser.id, ReviewType.DISLIKE)
+        revieweeUser.temperature = temperatureCalculator.calculate(likeCount, dislikeCount)
 
         return MemberReviewResponse.of(review, revieweeUser.username!!)
     }
