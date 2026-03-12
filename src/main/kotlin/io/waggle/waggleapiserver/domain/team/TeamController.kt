@@ -77,11 +77,13 @@ class TeamController(
         @PathVariable teamId: Long,
     ): TeamResponse = teamService.getTeam(teamId)
 
+    @AllowIncompleteProfile
     @Operation(summary = "팀 멤버 목록 조회")
     @GetMapping("/{teamId}/members")
     fun getTeamMembers(
         @PathVariable teamId: Long,
-    ): List<MemberResponse> = teamService.getTeamMembers(teamId)
+        @CurrentUser user: User?,
+    ): List<MemberResponse> = teamService.getTeamMembers(teamId, user)
 
     @Operation(
         summary = "팀 지원 목록 조회",

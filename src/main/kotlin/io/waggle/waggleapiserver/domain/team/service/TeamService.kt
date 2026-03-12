@@ -93,8 +93,21 @@ class TeamService(
         return TeamResponse.of(team, memberCount)
     }
 
-    fun getTeamMembers(teamId: Long): List<MemberResponse> {
-        val members = memberRepository.findByTeamIdOrderByRoleAscCreatedAtAsc(teamId)
+    fun getTeamMembers(
+        teamId: Long,
+        user: User?,
+    ): List<MemberResponse> {
+        val isTeamMember = user?.let { memberRepository.existsByUserIdAndTeamId(it.id, teamId) } ?: false
+
+        val activeMembers = memberRepository.findByTeamIdOrderByRoleAscCreatedAtAsc(teamId)
+        val deletedMembers =
+            if (isTeamMember) {
+                memberRepository.findByTeamIdAndDeletedAtIsNotNullOrderByRoleAscCreatedAtAsc(teamId)
+            } else {
+                emptyList()
+            }
+        val members = activeMembers + deletedMembers
+
         val userById = userRepository.findAllById(members.map { it.userId }).associateBy { it.id }
 
         return members.map {
