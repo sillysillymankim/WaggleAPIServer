@@ -11,6 +11,7 @@ import io.waggle.waggleapiserver.domain.member.MemberRole
 import io.waggle.waggleapiserver.domain.member.dto.response.MemberResponse
 import io.waggle.waggleapiserver.domain.member.repository.MemberRepository
 import io.waggle.waggleapiserver.domain.team.Team
+import io.waggle.waggleapiserver.domain.team.dto.request.TeamStatusUpdateRequest
 import io.waggle.waggleapiserver.domain.team.dto.request.TeamUpsertRequest
 import io.waggle.waggleapiserver.domain.team.dto.response.TeamResponse
 import io.waggle.waggleapiserver.domain.team.repository.TeamRepository
@@ -148,6 +149,34 @@ class TeamService(
             workMode = workMode,
             profileImageUrl = profileImageUrl,
         )
+
+        val memberCount = memberRepository.countByTeamId(teamId)
+
+        return TeamResponse.of(team, memberCount)
+    }
+
+    @Transactional
+    fun updateTeamStatus(
+        teamId: Long,
+        request: TeamStatusUpdateRequest,
+        user: User,
+    ): TeamResponse {
+        val member =
+            memberRepository.findByUserIdAndTeamId(user.id, teamId)
+                ?: throw BusinessException(
+                    ErrorCode.ENTITY_NOT_FOUND,
+                    "Member not found: ${user.id}, $teamId",
+                )
+        member.checkMemberRole(MemberRole.LEADER)
+
+        val team =
+            teamRepository.findByIdOrNull(teamId)
+                ?: throw BusinessException(
+                    ErrorCode.ENTITY_NOT_FOUND,
+                    "Team not found: $teamId",
+                )
+
+        team.updateStatus(request.status)
 
         val memberCount = memberRepository.countByTeamId(teamId)
 

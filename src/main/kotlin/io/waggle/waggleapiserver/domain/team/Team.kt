@@ -66,6 +66,10 @@ class Team(
         this.profileImageUrl = profileImageUrl
     }
 
+    fun updateStatus(status: TeamStatus) {
+        this.status = status
+    }
+
     fun checkCompleted() {
         if (!isCompleted) {
             throw BusinessException(ErrorCode.INVALID_STATE, "Team is not completed yet")

@@ -15,6 +15,7 @@ import io.waggle.waggleapiserver.domain.member.dto.response.MemberResponse
 import io.waggle.waggleapiserver.domain.member.service.MemberService
 import io.waggle.waggleapiserver.domain.post.dto.response.PostSimpleResponse
 import io.waggle.waggleapiserver.domain.post.service.PostService
+import io.waggle.waggleapiserver.domain.team.dto.request.TeamStatusUpdateRequest
 import io.waggle.waggleapiserver.domain.team.dto.request.TeamUpsertRequest
 import io.waggle.waggleapiserver.domain.team.dto.response.TeamResponse
 import io.waggle.waggleapiserver.domain.team.service.TeamService
@@ -25,6 +26,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -108,6 +110,14 @@ class TeamController(
         @Valid @RequestBody request: TeamUpsertRequest,
         @CurrentUser user: User,
     ): TeamResponse = teamService.updateTeam(teamId, request, user)
+
+    @Operation(summary = "팀 상태 변경")
+    @PatchMapping("/{teamId}/status")
+    fun updateTeamStatus(
+        @PathVariable teamId: Long,
+        @Valid @RequestBody request: TeamStatusUpdateRequest,
+        @CurrentUser user: User,
+    ): TeamResponse = teamService.updateTeamStatus(teamId, request, user)
 
     @Operation(summary = "팀 삭제")
     @DeleteMapping("/{teamId}")
