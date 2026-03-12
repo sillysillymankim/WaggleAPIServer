@@ -16,10 +16,12 @@ data class MemberResponse(
     val teamId: Long,
     @Schema(description = "멤버 사용자 ID", example = "550e8400-e29b-41d4-a716-446655440000")
     val userId: UUID,
-    @Schema(description = "멤버 역할", example = "LEADER")
-    val role: MemberRole,
     @Schema(description = "사용자명", example = "testUser")
     val username: String,
+    @Schema(description = "직무", example = "BACKEND")
+    val position: Position,
+    @Schema(description = "멤버 역할", example = "LEADER")
+    val role: MemberRole,
     @Schema(
         description = "프로필 이미지 URL",
         example = "https://avatars.githubusercontent.com/u/112466204?s=80&v=4",
@@ -41,8 +43,9 @@ data class MemberResponse(
                 memberId = member.id,
                 teamId = member.teamId,
                 userId = member.userId,
-                role = member.role,
                 username = user.username!!,
+                position = member.position,
+                role = member.role,
                 profileImageUrl = user.profileImageUrl,
                 skills = user.skills,
                 createdAt = member.createdAt,
