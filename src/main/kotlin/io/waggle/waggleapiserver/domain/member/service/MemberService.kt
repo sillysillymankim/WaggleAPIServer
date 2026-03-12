@@ -80,7 +80,7 @@ class MemberService(
             delegateLeader(member, members[0])
         }
 
-        member.delete()
+        member.deleteBy(user.id)
     }
 
     @Transactional
@@ -107,7 +107,7 @@ class MemberService(
                 ?: throw BusinessException(ErrorCode.ENTITY_NOT_FOUND, "Member not found")
         leader.checkMemberRole(MemberRole.LEADER)
 
-        member.delete()
+        member.deleteBy(user.id)
     }
 
     private fun delegateLeader(

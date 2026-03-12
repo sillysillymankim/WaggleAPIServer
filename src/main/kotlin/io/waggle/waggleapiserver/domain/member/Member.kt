@@ -38,6 +38,9 @@ class Member(
     @Column(name = "is_visible", nullable = false)
     var visible: Boolean = true,
 ) : AuditingEntity() {
+    @Column(name = "deleted_by")
+    var deletedBy: UUID? = null
+
     val isLeader: Boolean
         get() = this.role == MemberRole.LEADER
 
@@ -53,5 +56,10 @@ class Member(
         if (role.level < requiredRole.level) {
             throw BusinessException(ErrorCode.ACCESS_DENIED, "Do not have the authority")
         }
+    }
+
+    fun deleteBy(deletedBy: UUID) {
+        this.deletedBy = deletedBy
+        delete()
     }
 }
