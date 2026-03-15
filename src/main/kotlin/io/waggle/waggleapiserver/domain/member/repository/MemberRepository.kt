@@ -22,6 +22,8 @@ interface MemberRepository : JpaRepository<Member, Long> {
 
     fun findByTeamId(teamId: Long): List<Member>
 
+    fun findByTeamIdAndUserIdNot(teamId: Long, userId: UUID): List<Member>
+
     fun findByIdNotAndTeamIdOrderByRoleAscCreatedAtAsc(
         id: Long,
         teamId: Long,

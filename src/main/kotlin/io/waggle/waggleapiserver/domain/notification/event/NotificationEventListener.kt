@@ -66,7 +66,7 @@ class NotificationEventListener(
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleMemberJoined(event: MemberJoinedEvent) {
-        val members = memberRepository.findByTeamId(event.teamId)
+        val members = memberRepository.findByTeamIdAndUserIdNot(event.teamId, event.triggeredBy)
         val notifications =
             members.map {
                 Notification(
