@@ -19,6 +19,7 @@ import io.waggle.waggleapiserver.domain.memberreview.dto.response.MemberReviewRe
 import io.waggle.waggleapiserver.domain.memberreview.enums.ReviewQueryType
 import io.waggle.waggleapiserver.domain.memberreview.service.MemberReviewService
 import io.waggle.waggleapiserver.domain.notification.dto.request.ReadNotificationsRequest
+import io.waggle.waggleapiserver.domain.notification.dto.response.NotificationCountResponse
 import io.waggle.waggleapiserver.domain.notification.dto.response.NotificationResponse
 import io.waggle.waggleapiserver.domain.notification.service.NotificationService
 import io.waggle.waggleapiserver.domain.team.dto.response.TeamResponse
@@ -169,6 +170,12 @@ class UserController(
         @ParameterObject cursorQuery: CursorGetQuery,
         @CurrentUser user: User,
     ): CursorResponse<NotificationResponse> = notificationService.getUserNotifications(cursorQuery, user)
+
+    @Operation(summary = "본인 알림 개수 조회")
+    @GetMapping("/me/notifications/count")
+    fun getMyNotificationCount(
+        @CurrentUser user: User,
+    ): NotificationCountResponse = notificationService.getNotificationCount(user)
 
     @AllowIncompleteProfile
     @Operation(summary = "프로필 완성 여부 조회")

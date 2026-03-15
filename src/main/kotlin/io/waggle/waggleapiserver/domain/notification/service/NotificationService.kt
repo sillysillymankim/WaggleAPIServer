@@ -3,6 +3,7 @@ package io.waggle.waggleapiserver.domain.notification.service
 import io.waggle.waggleapiserver.common.dto.request.CursorGetQuery
 import io.waggle.waggleapiserver.common.dto.response.CursorResponse
 import io.waggle.waggleapiserver.domain.member.repository.MemberRepository
+import io.waggle.waggleapiserver.domain.notification.dto.response.NotificationCountResponse
 import io.waggle.waggleapiserver.domain.notification.dto.response.NotificationResponse
 import io.waggle.waggleapiserver.domain.notification.repository.NotificationRepository
 import io.waggle.waggleapiserver.domain.team.dto.response.TeamResponse
@@ -74,6 +75,12 @@ class NotificationService(
             hasNext = hasNext,
         )
     }
+
+    fun getNotificationCount(user: User): NotificationCountResponse =
+        NotificationCountResponse(
+            totalCount = notificationRepository.countByUserId(user.id),
+            unreadCount = notificationRepository.countByUserIdAndReadAtIsNull(user.id),
+        )
 
     @Transactional
     fun readNotifications(user: User, notificationIds: List<Long>) {

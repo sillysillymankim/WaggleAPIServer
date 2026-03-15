@@ -10,6 +10,10 @@ import java.time.Instant
 import java.util.UUID
 
 interface NotificationRepository : JpaRepository<Notification, Long> {
+    fun countByUserId(userId: UUID): Long
+
+    fun countByUserIdAndReadAtIsNull(userId: UUID): Long
+
     @Query(
         """
         SELECT n FROM Notification n
