@@ -2,7 +2,7 @@ package io.waggle.waggleapiserver.domain.user.service
 
 import io.waggle.waggleapiserver.common.exception.BusinessException
 import io.waggle.waggleapiserver.common.exception.ErrorCode
-import io.waggle.waggleapiserver.common.storage.ImageDeleteEvent
+import io.waggle.waggleapiserver.common.storage.event.ImageDeleteEvent
 import io.waggle.waggleapiserver.common.storage.StorageClient
 import io.waggle.waggleapiserver.common.storage.dto.request.PresignedUrlRequest
 import io.waggle.waggleapiserver.common.storage.dto.response.PresignedUrlResponse
