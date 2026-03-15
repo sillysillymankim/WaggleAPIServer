@@ -2,6 +2,8 @@ package io.waggle.waggleapiserver.domain.user
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import io.waggle.waggleapiserver.common.dto.request.CursorGetQuery
+import io.waggle.waggleapiserver.common.dto.response.CursorResponse
 import io.waggle.waggleapiserver.common.infrastructure.persistence.resolver.AllowIncompleteProfile
 import io.waggle.waggleapiserver.common.infrastructure.persistence.resolver.CurrentUser
 import io.waggle.waggleapiserver.common.storage.dto.request.PresignedUrlRequest
@@ -29,6 +31,7 @@ import io.waggle.waggleapiserver.domain.user.dto.response.UserProfileResponse
 import io.waggle.waggleapiserver.domain.user.dto.response.UserSimpleResponse
 import io.waggle.waggleapiserver.domain.user.service.UserService
 import jakarta.validation.Valid
+import org.springdoc.core.annotations.ParameterObject
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -160,8 +163,9 @@ class UserController(
     @Operation(summary = "본인 알림 목록 조회")
     @GetMapping("/me/notifications")
     fun getMyNotifications(
+        @ParameterObject cursorQuery: CursorGetQuery,
         @CurrentUser user: User,
-    ): List<NotificationResponse> = notificationService.getUserNotifications(user)
+    ): CursorResponse<NotificationResponse> = notificationService.getUserNotifications(cursorQuery, user)
 
     @AllowIncompleteProfile
     @Operation(summary = "프로필 완성 여부 조회")
