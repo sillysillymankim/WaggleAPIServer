@@ -12,6 +12,7 @@ import io.waggle.waggleapiserver.domain.user.repository.UserRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 
 @Service
 @Transactional(readOnly = true)
@@ -72,5 +73,15 @@ class NotificationService(
             nextCursor = if (hasNext) slicedNotifications.lastOrNull()?.id else null,
             hasNext = hasNext,
         )
+    }
+
+    @Transactional
+    fun readNotifications(user: User, notificationIds: List<Long>) {
+        notificationRepository.markAsReadByIds(user.id, notificationIds, Instant.now())
+    }
+
+    @Transactional
+    fun readAllNotifications(user: User) {
+        notificationRepository.markAllAsRead(user.id, Instant.now())
     }
 }
