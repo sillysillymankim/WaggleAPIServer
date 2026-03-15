@@ -15,6 +15,18 @@ interface MemberRepository : JpaRepository<Member, Long> {
 
     fun countByTeamId(teamId: Long): Int
 
+    @Query(
+        """
+        SELECT m.teamId AS teamId, COUNT(m) AS count
+        FROM Member m
+        WHERE m.teamId IN :teamIds
+        GROUP BY m.teamId
+        """,
+    )
+    fun countByTeamIds(
+        @Param("teamIds") teamIds: List<Long>,
+    ): List<TeamMemberCount>
+
     fun findByUserIdAndTeamId(
         userId: UUID,
         teamId: Long,
@@ -22,7 +34,10 @@ interface MemberRepository : JpaRepository<Member, Long> {
 
     fun findByTeamId(teamId: Long): List<Member>
 
-    fun findByTeamIdAndUserIdNot(teamId: Long, userId: UUID): List<Member>
+    fun findByTeamIdAndUserIdNot(
+        teamId: Long,
+        userId: UUID,
+    ): List<Member>
 
     fun findByIdNotAndTeamIdOrderByRoleAscCreatedAtAsc(
         id: Long,
@@ -51,4 +66,9 @@ interface MemberRepository : JpaRepository<Member, Long> {
     fun findByTeamIdAndDeletedAtIsNotNullOrderByRoleAscCreatedAtAsc(
         @Param("teamId") teamId: Long,
     ): List<Member>
+}
+
+interface TeamMemberCount {
+    val teamId: Long
+    val count: Long
 }
