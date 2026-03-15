@@ -194,7 +194,7 @@ class TeamService(
         team.updateStatus(request.status)
 
         if (request.status == TeamStatus.COMPLETED) {
-            eventPublisher.publishEvent(TeamCompletedEvent(teamId))
+            eventPublisher.publishEvent(TeamCompletedEvent(teamId = teamId))
         }
 
         val memberCount = memberRepository.countByTeamId(teamId)
