@@ -41,11 +41,12 @@ class MemberController(
         description = "본인의 멤버 권한에 따라 타 멤버의 권한을 변경함",
     )
     @PatchMapping("/{memberId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun updateMemberRole(
         @PathVariable memberId: Long,
         @RequestBody request: MemberUpdateRoleRequest,
         @CurrentUser user: User,
-    ): MemberResponse = memberService.updateMemberRole(memberId, request, user)
+    ) = memberService.updateMemberRole(memberId, request, user)
 
     @Operation(
         summary = "멤버 추방",

@@ -2,7 +2,9 @@ package io.waggle.waggleapiserver.domain.team.service
 
 import io.waggle.waggleapiserver.common.exception.BusinessException
 import io.waggle.waggleapiserver.common.exception.ErrorCode
-import io.waggle.waggleapiserver.common.storage.ImageDeleteEvent
+import io.waggle.waggleapiserver.common.storage.event.ImageDeleteEvent
+import io.waggle.waggleapiserver.domain.notification.event.TeamCompletedEvent
+import io.waggle.waggleapiserver.domain.team.enums.TeamStatus
 import io.waggle.waggleapiserver.common.storage.StorageClient
 import io.waggle.waggleapiserver.common.storage.dto.request.PresignedUrlRequest
 import io.waggle.waggleapiserver.common.storage.dto.response.PresignedUrlResponse
@@ -173,7 +175,7 @@ class TeamService(
         teamId: Long,
         request: TeamStatusUpdateRequest,
         user: User,
-    ): TeamResponse {
+    ) {
         val member =
             memberRepository.findByUserIdAndTeamId(user.id, teamId)
                 ?: throw BusinessException(
@@ -191,9 +193,10 @@ class TeamService(
 
         team.updateStatus(request.status)
 
-        val memberCount = memberRepository.countByTeamId(teamId)
+        if (request.status == TeamStatus.COMPLETED) {
+            eventPublisher.publishEvent(TeamCompletedEvent(teamId = teamId))
+        }
 
-        return TeamResponse.of(team, memberCount)
     }
 
     @Transactional

@@ -32,6 +32,8 @@ class Notification(
     val teamId: Long?,
     @Column(name = "user_id", nullable = false, updatable = false)
     val userId: UUID,
+    @Column(name = "triggered_by", updatable = false)
+    val triggeredBy: UUID? = null,
 ) {
     @Column(name = "read_at")
     var readAt: Instant? = null

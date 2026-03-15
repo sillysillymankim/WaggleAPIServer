@@ -1,13 +1,10 @@
-package io.waggle.waggleapiserver.common.storage
+package io.waggle.waggleapiserver.common.storage.event
 
+import io.waggle.waggleapiserver.common.storage.StorageClient
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
-
-data class ImageDeleteEvent(
-    val imageUrl: String,
-)
 
 @Component
 class ImageDeleteEventListener(

@@ -14,10 +14,15 @@ import io.waggle.waggleapiserver.domain.application.repository.ApplicationReposi
 import io.waggle.waggleapiserver.domain.member.Member
 import io.waggle.waggleapiserver.domain.member.MemberRole
 import io.waggle.waggleapiserver.domain.member.repository.MemberRepository
+import io.waggle.waggleapiserver.domain.notification.event.ApplicationApprovedEvent
+import io.waggle.waggleapiserver.domain.notification.event.ApplicationReceivedEvent
+import io.waggle.waggleapiserver.domain.notification.event.ApplicationRejectedEvent
+import io.waggle.waggleapiserver.domain.notification.event.MemberJoinedEvent
 import io.waggle.waggleapiserver.domain.post.repository.PostRepository
 import io.waggle.waggleapiserver.domain.recruitment.repository.RecruitmentRepository
 import io.waggle.waggleapiserver.domain.user.User
 import io.waggle.waggleapiserver.domain.user.repository.UserRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -26,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class ApplicationService(
+    private val eventPublisher: ApplicationEventPublisher,
     private val applicationRepository: ApplicationRepository,
     private val applicationReadRepository: ApplicationReadRepository,
     private val memberRepository: MemberRepository,
@@ -85,6 +91,13 @@ class ApplicationService(
             )
         application.portfolioUrls.addAll(portfolioUrls)
         val savedApplication = applicationRepository.save(application)
+
+        eventPublisher.publishEvent(
+            ApplicationReceivedEvent(
+                teamId = teamId,
+                triggeredBy = user.id,
+            ),
+        )
 
         return ApplicationResponse.of(savedApplication)
     }
@@ -198,7 +211,7 @@ class ApplicationService(
     fun approveApplication(
         applicationId: Long,
         user: User,
-    ): ApplicationResponse {
+    ) {
         val application =
             applicationRepository.findByIdOrNull(applicationId)
                 ?: throw BusinessException(
@@ -224,21 +237,27 @@ class ApplicationService(
             memberRepository.save(member)
         }
 
-        val applicant =
-            userRepository.findByIdOrNull(application.userId)
-                ?: throw BusinessException(
-                    ErrorCode.ENTITY_NOT_FOUND,
-                    "User not found: ${application.userId}",
-                )
+        eventPublisher.publishEvent(
+            ApplicationApprovedEvent(
+                teamId = application.teamId,
+                applicantUserId = application.userId,
+                triggeredBy = user.id,
+            ),
+        )
+        eventPublisher.publishEvent(
+            MemberJoinedEvent(
+                teamId = application.teamId,
+                triggeredBy = application.userId,
+            ),
+        )
 
-        return ApplicationResponse.of(application, applicant)
     }
 
     @Transactional
     fun rejectApplication(
         applicationId: Long,
         user: User,
-    ): ApplicationResponse {
+    ) {
         val application =
             applicationRepository.findByIdOrNull(applicationId)
                 ?: throw BusinessException(
@@ -253,14 +272,14 @@ class ApplicationService(
 
         application.updateStatus(ApplicationStatus.REJECTED)
 
-        val applicant =
-            userRepository.findByIdOrNull(application.userId)
-                ?: throw BusinessException(
-                    ErrorCode.ENTITY_NOT_FOUND,
-                    "User not found: ${application.userId}",
-                )
+        eventPublisher.publishEvent(
+            ApplicationRejectedEvent(
+                teamId = application.teamId,
+                applicantUserId = application.userId,
+                triggeredBy = user.id,
+            ),
+        )
 
-        return ApplicationResponse.of(application, applicant)
     }
 
     @Transactional

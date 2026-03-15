@@ -2,6 +2,8 @@ package io.waggle.waggleapiserver.domain.user
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import io.waggle.waggleapiserver.common.dto.request.CursorGetQuery
+import io.waggle.waggleapiserver.common.dto.response.CursorResponse
 import io.waggle.waggleapiserver.common.infrastructure.persistence.resolver.AllowIncompleteProfile
 import io.waggle.waggleapiserver.common.infrastructure.persistence.resolver.CurrentUser
 import io.waggle.waggleapiserver.common.storage.dto.request.PresignedUrlRequest
@@ -16,6 +18,8 @@ import io.waggle.waggleapiserver.domain.follow.service.FollowService
 import io.waggle.waggleapiserver.domain.memberreview.dto.response.MemberReviewResponse
 import io.waggle.waggleapiserver.domain.memberreview.enums.ReviewQueryType
 import io.waggle.waggleapiserver.domain.memberreview.service.MemberReviewService
+import io.waggle.waggleapiserver.domain.notification.dto.request.ReadNotificationsRequest
+import io.waggle.waggleapiserver.domain.notification.dto.response.NotificationCountResponse
 import io.waggle.waggleapiserver.domain.notification.dto.response.NotificationResponse
 import io.waggle.waggleapiserver.domain.notification.service.NotificationService
 import io.waggle.waggleapiserver.domain.team.dto.response.TeamResponse
@@ -29,6 +33,8 @@ import io.waggle.waggleapiserver.domain.user.dto.response.UserProfileResponse
 import io.waggle.waggleapiserver.domain.user.dto.response.UserSimpleResponse
 import io.waggle.waggleapiserver.domain.user.service.UserService
 import jakarta.validation.Valid
+import org.springdoc.core.annotations.ParameterObject
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -37,6 +43,7 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
@@ -160,8 +167,15 @@ class UserController(
     @Operation(summary = "본인 알림 목록 조회")
     @GetMapping("/me/notifications")
     fun getMyNotifications(
+        @ParameterObject cursorQuery: CursorGetQuery,
         @CurrentUser user: User,
-    ): List<NotificationResponse> = notificationService.getUserNotifications(user)
+    ): CursorResponse<NotificationResponse> = notificationService.getUserNotifications(cursorQuery, user)
+
+    @Operation(summary = "본인 알림 개수 조회")
+    @GetMapping("/me/notifications/count")
+    fun getMyNotificationCount(
+        @CurrentUser user: User,
+    ): NotificationCountResponse = notificationService.getNotificationCount(user)
 
     @AllowIncompleteProfile
     @Operation(summary = "프로필 완성 여부 조회")
@@ -178,11 +192,27 @@ class UserController(
 
     @Operation(summary = "본인 팀 공개/비공개 설정")
     @PatchMapping("/me/teams/{teamId}/visibility")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun updateMyTeamVisibility(
         @PathVariable teamId: Long,
         @Valid @RequestBody request: MemberUpdateVisibilityRequest,
         @CurrentUser user: User,
-    ): TeamResponse = userService.updateTeamVisibility(user.id, teamId, request)
+    ) = userService.updateTeamVisibility(user.id, teamId, request)
+
+    @Operation(summary = "본인 알림 읽음 처리")
+    @PatchMapping("/me/notifications/read")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun readMyNotifications(
+        @Valid @RequestBody request: ReadNotificationsRequest,
+        @CurrentUser user: User,
+    ) = notificationService.readNotifications(user, request.notificationIds)
+
+    @Operation(summary = "본인 알림 전체 읽음 처리")
+    @PatchMapping("/me/notifications/read-all")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun readAllMyNotifications(
+        @CurrentUser user: User,
+    ) = notificationService.readAllNotifications(user)
 
     @Operation(summary = "본인 프로필 수정")
     @PutMapping("/me")

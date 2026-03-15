@@ -115,11 +115,12 @@ class TeamController(
 
     @Operation(summary = "팀 상태 변경")
     @PatchMapping("/{teamId}/status")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun updateTeamStatus(
         @PathVariable teamId: Long,
         @Valid @RequestBody request: TeamStatusUpdateRequest,
         @CurrentUser user: User,
-    ): TeamResponse = teamService.updateTeamStatus(teamId, request, user)
+    ) = teamService.updateTeamStatus(teamId, request, user)
 
     @Operation(summary = "팀 삭제")
     @DeleteMapping("/{teamId}")

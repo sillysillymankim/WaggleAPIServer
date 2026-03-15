@@ -7,9 +7,12 @@ import io.waggle.waggleapiserver.domain.member.MemberRole
 import io.waggle.waggleapiserver.domain.member.dto.request.MemberUpdateRoleRequest
 import io.waggle.waggleapiserver.domain.member.dto.response.MemberResponse
 import io.waggle.waggleapiserver.domain.member.repository.MemberRepository
+import io.waggle.waggleapiserver.domain.notification.event.MemberLeftEvent
+import io.waggle.waggleapiserver.domain.notification.event.MemberRemovedEvent
 import io.waggle.waggleapiserver.domain.team.repository.TeamRepository
 import io.waggle.waggleapiserver.domain.user.User
 import io.waggle.waggleapiserver.domain.user.repository.UserRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -17,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class MemberService(
+    private val eventPublisher: ApplicationEventPublisher,
     private val memberRepository: MemberRepository,
     private val teamRepository: TeamRepository,
     private val userRepository: UserRepository,
@@ -26,7 +30,7 @@ class MemberService(
         memberId: Long,
         request: MemberUpdateRoleRequest,
         user: User,
-    ): MemberResponse {
+    ) {
         val role = request.role
 
         val targetMember =
@@ -52,14 +56,12 @@ class MemberService(
                 member.checkMemberRole(MemberRole.LEADER)
                 targetMember.updateRole(role)
             }
-            MemberRole.LEADER -> delegateLeader(member, targetMember)
+
+            MemberRole.LEADER -> {
+                delegateLeader(member, targetMember)
+            }
         }
 
-        val targetUser =
-            userRepository.findByIdOrNull(targetMember.userId)
-                ?: throw BusinessException(ErrorCode.ENTITY_NOT_FOUND, "User not found: ${targetMember.userId}")
-
-        return MemberResponse.of(targetMember, targetUser)
     }
 
     @Transactional
@@ -81,6 +83,8 @@ class MemberService(
         }
 
         member.deleteBy(user.id)
+
+        eventPublisher.publishEvent(MemberLeftEvent(teamId = teamId, triggeredBy = user.id))
     }
 
     @Transactional
@@ -108,6 +112,14 @@ class MemberService(
         leader.checkMemberRole(MemberRole.LEADER)
 
         member.deleteBy(user.id)
+
+        eventPublisher.publishEvent(
+            MemberRemovedEvent(
+                teamId = team.id,
+                removedUserId = member.userId,
+                triggeredBy = user.id,
+            ),
+        )
     }
 
     private fun delegateLeader(

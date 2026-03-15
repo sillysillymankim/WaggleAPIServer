@@ -2,10 +2,10 @@ package io.waggle.waggleapiserver.domain.user.service
 
 import io.waggle.waggleapiserver.common.exception.BusinessException
 import io.waggle.waggleapiserver.common.exception.ErrorCode
-import io.waggle.waggleapiserver.common.storage.ImageDeleteEvent
 import io.waggle.waggleapiserver.common.storage.StorageClient
 import io.waggle.waggleapiserver.common.storage.dto.request.PresignedUrlRequest
 import io.waggle.waggleapiserver.common.storage.dto.response.PresignedUrlResponse
+import io.waggle.waggleapiserver.common.storage.event.ImageDeleteEvent
 import io.waggle.waggleapiserver.domain.member.repository.MemberRepository
 import io.waggle.waggleapiserver.domain.memberreview.enums.ReviewType
 import io.waggle.waggleapiserver.domain.memberreview.repository.MemberReviewRepository
@@ -113,13 +113,14 @@ class UserService(
 
         val teamIds = members.map { it.teamId }
         val teamById = teamRepository.findAllById(teamIds).associateBy { it.id }
+        val memberCountByTeamId =
+            memberRepository.countByTeamIds(teamIds).associate { it.teamId to it.count.toInt() }
 
         return members.mapNotNull { member ->
             teamById[member.teamId]?.let { team ->
-                val memberCount = memberRepository.countByTeamId(team.id)
                 TeamResponse.of(
                     team = team,
-                    memberCount = memberCount,
+                    memberCount = memberCountByTeamId[team.id] ?: 0,
                     position = if (includeHidden) member.position else null,
                     role = if (includeHidden) member.role else null,
                     visible = if (includeHidden) member.visible else null,
@@ -136,27 +137,13 @@ class UserService(
         userId: UUID,
         teamId: Long,
         request: MemberUpdateVisibilityRequest,
-    ): TeamResponse {
+    ) {
         val member =
             memberRepository.findByUserIdAndTeamId(userId, teamId)
                 ?: throw BusinessException(ErrorCode.ENTITY_NOT_FOUND, "Member not found")
 
         val (visible) = request
         member.updateVisibility(visible)
-
-        val team =
-            teamRepository.findByIdOrNull(teamId)
-                ?: throw BusinessException(ErrorCode.ENTITY_NOT_FOUND, "Team not found")
-
-        val memberCount = memberRepository.countByTeamId(teamId)
-
-        return TeamResponse.of(
-            team = team,
-            memberCount = memberCount,
-            position = member.position,
-            role = member.role,
-            visible = visible,
-        )
     }
 
     @Transactional
