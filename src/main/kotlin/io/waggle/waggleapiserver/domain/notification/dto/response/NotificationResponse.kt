@@ -1,5 +1,6 @@
 package io.waggle.waggleapiserver.domain.notification.dto.response
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import io.swagger.v3.oas.annotations.media.Schema
 import io.waggle.waggleapiserver.domain.notification.Notification
 import io.waggle.waggleapiserver.domain.notification.NotificationType
@@ -8,6 +9,7 @@ import io.waggle.waggleapiserver.domain.user.User
 import java.time.Instant
 import java.util.UUID
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "알림 응답 DTO")
 data class NotificationResponse(
     @Schema(description = "알림 ID", example = "1")
