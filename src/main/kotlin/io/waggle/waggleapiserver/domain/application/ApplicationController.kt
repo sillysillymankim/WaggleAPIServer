@@ -36,20 +36,22 @@ class ApplicationController(
         description = "팀 관리자가 지원자를 승인함",
     )
     @PatchMapping("/{applicationId}/approve")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun approveApplication(
         @PathVariable applicationId: Long,
         @CurrentUser user: User,
-    ): ApplicationResponse = applicationService.approveApplication(applicationId, user)
+    ) = applicationService.approveApplication(applicationId, user)
 
     @Operation(
         summary = "팀 지원 거절",
         description = "팀 관리자가 지원자를 거절함",
     )
     @PatchMapping("/{applicationId}/reject")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun rejectApplication(
         @PathVariable applicationId: Long,
         @CurrentUser user: User,
-    ): ApplicationResponse = applicationService.rejectApplication(applicationId, user)
+    ) = applicationService.rejectApplication(applicationId, user)
 
     @Operation(
         summary = "팀 지원 삭제",

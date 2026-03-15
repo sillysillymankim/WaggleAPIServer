@@ -137,27 +137,13 @@ class UserService(
         userId: UUID,
         teamId: Long,
         request: MemberUpdateVisibilityRequest,
-    ): TeamResponse {
+    ) {
         val member =
             memberRepository.findByUserIdAndTeamId(userId, teamId)
                 ?: throw BusinessException(ErrorCode.ENTITY_NOT_FOUND, "Member not found")
 
         val (visible) = request
         member.updateVisibility(visible)
-
-        val team =
-            teamRepository.findByIdOrNull(teamId)
-                ?: throw BusinessException(ErrorCode.ENTITY_NOT_FOUND, "Team not found")
-
-        val memberCount = memberRepository.countByTeamId(teamId)
-
-        return TeamResponse.of(
-            team = team,
-            memberCount = memberCount,
-            position = member.position,
-            role = member.role,
-            visible = visible,
-        )
     }
 
     @Transactional

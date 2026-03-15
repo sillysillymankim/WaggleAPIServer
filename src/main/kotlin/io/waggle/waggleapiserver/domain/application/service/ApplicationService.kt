@@ -211,7 +211,7 @@ class ApplicationService(
     fun approveApplication(
         applicationId: Long,
         user: User,
-    ): ApplicationResponse {
+    ) {
         val application =
             applicationRepository.findByIdOrNull(applicationId)
                 ?: throw BusinessException(
@@ -237,13 +237,6 @@ class ApplicationService(
             memberRepository.save(member)
         }
 
-        val applicant =
-            userRepository.findByIdOrNull(application.userId)
-                ?: throw BusinessException(
-                    ErrorCode.ENTITY_NOT_FOUND,
-                    "User not found: ${application.userId}",
-                )
-
         eventPublisher.publishEvent(
             ApplicationApprovedEvent(
                 teamId = application.teamId,
@@ -258,14 +251,13 @@ class ApplicationService(
             ),
         )
 
-        return ApplicationResponse.of(application, applicant)
     }
 
     @Transactional
     fun rejectApplication(
         applicationId: Long,
         user: User,
-    ): ApplicationResponse {
+    ) {
         val application =
             applicationRepository.findByIdOrNull(applicationId)
                 ?: throw BusinessException(
@@ -280,13 +272,6 @@ class ApplicationService(
 
         application.updateStatus(ApplicationStatus.REJECTED)
 
-        val applicant =
-            userRepository.findByIdOrNull(application.userId)
-                ?: throw BusinessException(
-                    ErrorCode.ENTITY_NOT_FOUND,
-                    "User not found: ${application.userId}",
-                )
-
         eventPublisher.publishEvent(
             ApplicationRejectedEvent(
                 teamId = application.teamId,
@@ -295,7 +280,6 @@ class ApplicationService(
             ),
         )
 
-        return ApplicationResponse.of(application, applicant)
     }
 
     @Transactional

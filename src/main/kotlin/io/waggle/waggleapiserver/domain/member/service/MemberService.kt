@@ -30,7 +30,7 @@ class MemberService(
         memberId: Long,
         request: MemberUpdateRoleRequest,
         user: User,
-    ): MemberResponse {
+    ) {
         val role = request.role
 
         val targetMember =
@@ -62,14 +62,6 @@ class MemberService(
             }
         }
 
-        val targetUser =
-            userRepository.findByIdOrNull(targetMember.userId)
-                ?: throw BusinessException(
-                    ErrorCode.ENTITY_NOT_FOUND,
-                    "User not found: ${targetMember.userId}",
-                )
-
-        return MemberResponse.of(targetMember, targetUser)
     }
 
     @Transactional

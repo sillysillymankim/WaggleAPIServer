@@ -175,7 +175,7 @@ class TeamService(
         teamId: Long,
         request: TeamStatusUpdateRequest,
         user: User,
-    ): TeamResponse {
+    ) {
         val member =
             memberRepository.findByUserIdAndTeamId(user.id, teamId)
                 ?: throw BusinessException(
@@ -197,9 +197,6 @@ class TeamService(
             eventPublisher.publishEvent(TeamCompletedEvent(teamId = teamId))
         }
 
-        val memberCount = memberRepository.countByTeamId(teamId)
-
-        return TeamResponse.of(team, memberCount)
     }
 
     @Transactional
