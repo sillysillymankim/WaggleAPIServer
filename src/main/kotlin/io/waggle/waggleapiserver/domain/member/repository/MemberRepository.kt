@@ -1,6 +1,7 @@
 package io.waggle.waggleapiserver.domain.member.repository
 
 import io.waggle.waggleapiserver.domain.member.Member
+import io.waggle.waggleapiserver.domain.member.MemberRole
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -19,6 +20,8 @@ interface MemberRepository : JpaRepository<Member, Long> {
         teamId: Long,
     ): Member?
 
+    fun findByTeamId(teamId: Long): List<Member>
+
     fun findByIdNotAndTeamIdOrderByRoleAscCreatedAtAsc(
         id: Long,
         teamId: Long,
@@ -30,6 +33,11 @@ interface MemberRepository : JpaRepository<Member, Long> {
 
     fun findByTeamIdOrderByRoleAscCreatedAtAsc(teamId: Long): List<Member>
 
+    fun findByTeamIdAndRoleIn(
+        teamId: Long,
+        roles: List<MemberRole>,
+    ): List<Member>
+
     @Query(
         """
         SELECT * FROM members
@@ -38,5 +46,7 @@ interface MemberRepository : JpaRepository<Member, Long> {
         """,
         nativeQuery = true,
     )
-    fun findByTeamIdAndDeletedAtIsNotNullOrderByRoleAscCreatedAtAsc(@Param("teamId") teamId: Long): List<Member>
+    fun findByTeamIdAndDeletedAtIsNotNullOrderByRoleAscCreatedAtAsc(
+        @Param("teamId") teamId: Long,
+    ): List<Member>
 }
