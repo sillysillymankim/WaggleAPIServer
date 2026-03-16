@@ -7,17 +7,18 @@ import io.waggle.waggleapiserver.domain.notification.NotificationType
 import io.waggle.waggleapiserver.domain.notification.repository.NotificationRepository
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
 
 @Component
-@Transactional
 class NotificationEventListener(
     private val memberRepository: MemberRepository,
     private val notificationRepository: NotificationRepository,
 ) {
     @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleApplicationReceived(event: ApplicationReceivedEvent) {
         val members =
@@ -38,6 +39,7 @@ class NotificationEventListener(
     }
 
     @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleApplicationApproved(event: ApplicationApprovedEvent) {
         notificationRepository.save(
@@ -51,6 +53,7 @@ class NotificationEventListener(
     }
 
     @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleApplicationRejected(event: ApplicationRejectedEvent) {
         notificationRepository.save(
@@ -64,6 +67,7 @@ class NotificationEventListener(
     }
 
     @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleMemberJoined(event: MemberJoinedEvent) {
         val members = memberRepository.findByTeamIdAndUserIdNot(event.teamId, event.triggeredBy)
@@ -80,6 +84,7 @@ class NotificationEventListener(
     }
 
     @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleMemberLeft(event: MemberLeftEvent) {
         val members = memberRepository.findByTeamId(event.teamId)
@@ -96,6 +101,7 @@ class NotificationEventListener(
     }
 
     @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleMemberRemoved(event: MemberRemovedEvent) {
         notificationRepository.save(
@@ -109,6 +115,7 @@ class NotificationEventListener(
     }
 
     @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleTeamCompleted(event: TeamCompletedEvent) {
         val members = memberRepository.findByTeamId(event.teamId)
