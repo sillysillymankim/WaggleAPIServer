@@ -1,5 +1,6 @@
 package io.waggle.waggleapiserver.domain.message
 
+import io.waggle.waggleapiserver.common.AuditingEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -34,10 +35,7 @@ class Message(
     val receiverId: UUID,
     @Column(nullable = false, columnDefinition = "TEXT")
     val content: String,
-) {
+) : AuditingEntity() {
     @Column(name = "read_at")
     var readAt: Instant? = null
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: Instant = Instant.now()
 }
