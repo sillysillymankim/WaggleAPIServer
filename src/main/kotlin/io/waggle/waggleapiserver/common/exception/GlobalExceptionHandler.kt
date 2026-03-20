@@ -67,7 +67,6 @@ class GlobalExceptionHandler(
                 status = ErrorCode.INTERNAL_SERVER_ERROR.status.value(),
                 code = ErrorCode.INTERNAL_SERVER_ERROR.name,
                 message = ErrorCode.INTERNAL_SERVER_ERROR.message,
-                detail = e.message,
             )
         return ResponseEntity
             .status(ErrorCode.INTERNAL_SERVER_ERROR.status)

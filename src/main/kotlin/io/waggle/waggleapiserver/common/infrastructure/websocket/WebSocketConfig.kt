@@ -15,14 +15,20 @@ class WebSocketConfig(
         // 순수 WebSocket 엔드포인트
         registry
             .addEndpoint("/ws")
-            .setAllowedOriginPatterns("*")
-            .addInterceptors(webSocketAuthHandshakeInterceptor)
+            .setAllowedOriginPatterns(
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "https://waggle.lol",
+            ).addInterceptors(webSocketAuthHandshakeInterceptor)
 
         // SockJS 폴백 엔드포인트
         registry
             .addEndpoint("/ws-sockjs")
-            .setAllowedOriginPatterns("*")
-            .addInterceptors(webSocketAuthHandshakeInterceptor)
+            .setAllowedOriginPatterns(
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "https://waggle.lol",
+            ).addInterceptors(webSocketAuthHandshakeInterceptor)
             .withSockJS()
     }
 

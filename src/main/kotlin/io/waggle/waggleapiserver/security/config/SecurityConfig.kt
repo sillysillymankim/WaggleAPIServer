@@ -1,5 +1,6 @@
 package io.waggle.waggleapiserver.security.config
 
+import io.waggle.waggleapiserver.security.filter.RateLimitFilter
 import io.waggle.waggleapiserver.security.jwt.JwtAuthenticationFilter
 import io.waggle.waggleapiserver.security.oauth2.CustomOAuth2UserService
 import io.waggle.waggleapiserver.security.oauth2.OAuth2LoginFailureHandler
@@ -21,6 +22,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 @EnableWebSecurity
 class SecurityConfig(
     private val environment: Environment,
+    private val rateLimitFilter: RateLimitFilter,
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val customOAuth2UserService: CustomOAuth2UserService,
     private val oAuth2LoginSuccessHandler: OAuth2LoginSuccessHandler,
@@ -44,9 +46,8 @@ class SecurityConfig(
 
         http.authorizeHttpRequests { authorize ->
             authorize
-                .requestMatchers("/actuator/health", "/test/**")
-                .permitAll()
                 .requestMatchers(
+                    "/actuator/health",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/oauth2/**",
@@ -69,6 +70,9 @@ class SecurityConfig(
                 .successHandler(oAuth2LoginSuccessHandler)
                 .failureHandler(oAuth2LoginFailureHandler)
         }.addFilterBefore(
+            rateLimitFilter,
+            UsernamePasswordAuthenticationFilter::class.java,
+        ).addFilterBefore(
             jwtAuthenticationFilter,
             UsernamePasswordAuthenticationFilter::class.java,
         )

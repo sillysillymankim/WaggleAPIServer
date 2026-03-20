@@ -2,15 +2,16 @@ version: '3.8'
 
 services:
   nginx:
-    image: nginx:alpine
+    build: ./nginx
     container_name: waggle-nginx
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./.htpasswd:/etc/nginx/.htpasswd:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      - nginx-logs:/var/log/nginx
     depends_on:
       - app
     logging:
@@ -92,6 +93,29 @@ services:
         max-file: "3"
     restart: unless-stopped
 
+  fail2ban:
+    image: crazymax/fail2ban:latest
+    container_name: waggle-fail2ban
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./fail2ban/jail.local:/etc/fail2ban/jail.local:ro
+      - ./fail2ban/filter.d:/etc/fail2ban/filter.d:ro
+      - nginx-logs:/var/log/nginx:ro
+      - fail2ban-data:/var/lib/fail2ban
+    depends_on:
+      - nginx
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+
 volumes:
   db-data:
   redis-data:
+  nginx-logs:
+  fail2ban-data:

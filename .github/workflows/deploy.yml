@@ -29,7 +29,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "build/libs/*.jar,Dockerfile,docker-compose.yml,nginx.conf"
+          source: "build/libs/*.jar,Dockerfile,docker-compose.yml,nginx,fail2ban"
           target: "/opt/waggle/"
           overwrite: true
 
