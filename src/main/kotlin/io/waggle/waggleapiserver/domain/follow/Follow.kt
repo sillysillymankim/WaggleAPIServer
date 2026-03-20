@@ -15,7 +15,7 @@ import java.util.UUID
 @Table(
     name = "follows",
     uniqueConstraints = [UniqueConstraint(columnNames = ["follower_id", "followee_id"])],
-    indexes = [Index(name = "idx_follows_folowee", columnList = "followee_id")],
+    indexes = [Index(name = "idx_follows_followee", columnList = "followee_id")],
 )
 class Follow(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
