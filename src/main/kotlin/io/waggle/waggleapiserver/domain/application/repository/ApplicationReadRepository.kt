@@ -23,4 +23,9 @@ interface ApplicationReadRepository : JpaRepository<ApplicationRead, Long> {
         @Param("userId") userId: UUID,
         @Param("applicationIds") applicationIds: List<Long>,
     ): List<Long>
+
+    fun findByApplicationIdInAndUserIdIn(
+        applicationIds: List<Long>,
+        userIds: List<UUID>,
+    ): List<ApplicationRead>
 }

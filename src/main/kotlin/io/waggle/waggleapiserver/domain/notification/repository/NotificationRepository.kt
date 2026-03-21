@@ -1,6 +1,7 @@
 package io.waggle.waggleapiserver.domain.notification.repository
 
 import io.waggle.waggleapiserver.domain.notification.Notification
+import io.waggle.waggleapiserver.domain.notification.NotificationType
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
@@ -10,6 +11,11 @@ import java.time.Instant
 import java.util.UUID
 
 interface NotificationRepository : JpaRepository<Notification, Long> {
+    fun findByApplicationIdInAndType(
+        applicationIds: List<Long>,
+        type: NotificationType,
+    ): List<Notification>
+
     fun countByUserId(userId: UUID): Long
 
     fun countByUserIdAndReadAtIsNull(userId: UUID): Long
