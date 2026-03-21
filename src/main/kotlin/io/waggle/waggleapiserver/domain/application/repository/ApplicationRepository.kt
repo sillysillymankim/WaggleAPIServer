@@ -1,11 +1,13 @@
 package io.waggle.waggleapiserver.domain.application.repository
 
 import io.waggle.waggleapiserver.domain.application.Application
+import io.waggle.waggleapiserver.domain.application.ApplicationStatus
 import io.waggle.waggleapiserver.domain.user.enums.Position
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
+import java.time.Instant
 import java.util.UUID
 
 interface ApplicationRepository : JpaRepository<Application, Long> {
@@ -20,11 +22,13 @@ interface ApplicationRepository : JpaRepository<Application, Long> {
         userId: UUID,
     ): Application?
 
-    fun findByTeamId(teamId: Long): List<Application>
-
     fun findByUserId(userId: UUID): List<Application>
 
-    fun findByPostId(postId: Long): List<Application>
+    fun findByStatusAndCreatedAtBetween(
+        status: ApplicationStatus,
+        createdAtStart: Instant,
+        createdAtEnd: Instant,
+    ): List<Application>
 
     @Query(
         """
@@ -53,8 +57,6 @@ interface ApplicationRepository : JpaRepository<Application, Long> {
         @Param("cursor") cursor: Long?,
         pageable: Pageable,
     ): List<Application>
-
-    fun countByPostId(postId: Long): Int
 
     @Query("SELECT a.postId AS postId, COUNT(a) AS applicantCount FROM Application a WHERE a.postId IN :postIds GROUP BY a.postId")
     fun countApplicantsGroupByPostId(postIds: List<Long>): List<PostApplicantCount>
