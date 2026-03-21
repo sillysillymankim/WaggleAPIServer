@@ -28,10 +28,12 @@ class Notification(
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, columnDefinition = "VARCHAR(32)")
     val type: NotificationType,
-    @Column(name = "team_id")
-    val teamId: Long?,
     @Column(name = "user_id", nullable = false, updatable = false)
     val userId: UUID,
+    @Column(name = "team_id")
+    val teamId: Long?,
+    @Column(name = "application_id", updatable = false)
+    val applicationId: Long? = null,
     @Column(name = "triggered_by", updatable = false)
     val triggeredBy: UUID? = null,
 ) {
