@@ -7,6 +7,9 @@ logging:
     root: INFO
 
 spring:
+  flyway:
+    enabled: false
+
   data:
     redis:
       host: localhost
