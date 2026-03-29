@@ -28,7 +28,7 @@ spring:
       maximum-pool-size: 20
       minimum-idle: 5
     password: ${DB_PASSWORD}
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:waggle}?useSSL=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:waggle}?useSSL=true&serverTimezone=UTC&characterEncoding=UTF-8
     username: ${DB_USERNAME}
 
   jpa:

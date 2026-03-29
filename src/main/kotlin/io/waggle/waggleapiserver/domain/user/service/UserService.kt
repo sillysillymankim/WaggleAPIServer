@@ -193,5 +193,7 @@ class UserService(
         authService.deleteRefreshToken(user.id)
 
         user.deactivate()
+
+        userRepository.save(user)
     }
 }

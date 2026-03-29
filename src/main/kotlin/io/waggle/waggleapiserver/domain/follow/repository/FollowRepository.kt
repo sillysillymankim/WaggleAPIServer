@@ -29,7 +29,7 @@ interface FollowRepository : JpaRepository<Follow, Long> {
     @Modifying
     @Query(
         """
-        UPDATE follows SET deleted_at = UTC_TIMESTAMP()
+        UPDATE follows SET deleted_at = CURRENT_TIMESTAMP
         WHERE (follower_id = :userId OR followee_id = :userId) AND deleted_at IS NULL
         """,
         nativeQuery = true,

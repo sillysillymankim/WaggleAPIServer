@@ -83,7 +83,7 @@ interface ApplicationRepository : JpaRepository<Application, Long> {
     @Modifying
     @Query(
         """
-        UPDATE applications SET deleted_at = UTC_TIMESTAMP()
+        UPDATE applications SET deleted_at = CURRENT_TIMESTAMP
         WHERE user_id = :userId AND deleted_at IS NULL
         """,
         nativeQuery = true,
