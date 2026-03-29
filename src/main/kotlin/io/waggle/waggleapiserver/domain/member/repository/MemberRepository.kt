@@ -71,7 +71,7 @@ interface MemberRepository : JpaRepository<Member, Long> {
     @Modifying
     @Query(
         """
-        UPDATE members SET deleted_at = UTC_TIMESTAMP()
+        UPDATE members SET deleted_at = CURRENT_TIMESTAMP
         WHERE user_id = :userId AND deleted_at IS NULL
         """,
         nativeQuery = true,
