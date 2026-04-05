@@ -58,7 +58,7 @@ class SecurityConfig(
                 ).permitAll()
 
             if (isLocal) {
-                authorize.requestMatchers("/h2-console/**").permitAll()
+                authorize.requestMatchers("/h2-console/**", "/ws-test.html").permitAll()
             }
 
             authorize

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>WebSocket Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+  <style>
+    body { font-family: monospace; padding: 20px; max-width: 600px; }
+    input, button { font-size: 14px; padding: 6px; }
+    input { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+    #log { background: #111; color: #0f0; padding: 12px; height: 300px; overflow-y: auto; white-space: pre-wrap; font-size: 13px; }
+    .step { margin-bottom: 16px; padding: 12px; border: 1px solid #ccc; }
+    h3 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h2>WebSocket Message Test</h2>
+
+  <div class="step">
+    <h3>1. Access Token</h3>
+    <input id="accessToken" placeholder="accessToken 붙여넣기" />
+    <button onclick="getWsToken()">OTT 발급</button>
+  </div>
+
+  <div class="step">
+    <h3>2. WebSocket 연결</h3>
+    <button onclick="connect()" id="connectBtn" disabled>연결</button>
+    <button onclick="disconnect()">연결 해제</button>
+    <span id="status">미연결</span>
+  </div>
+
+  <div class="step">
+    <h3>3. 메시지 전송</h3>
+    <input id="receiverId" placeholder="receiverId (UUID)" />
+    <input id="content" placeholder="메시지 내용" />
+    <button onclick="sendMessage()" id="sendBtn" disabled>전송</button>
+  </div>
+
+  <h3>로그</h3>
+  <div id="log"></div>
+
+  <script>
+    const API_URL = 'http://localhost:8080';
+    const WS_URL = 'ws://localhost:8080/ws';
+    let client = null;
+    let wsToken = null;
+
+    function log(msg) {
+      const el = document.getElementById('log');
+      const time = new Date().toLocaleTimeString();
+      el.textContent += `[${time}] ${msg}\n`;
+      el.scrollTop = el.scrollHeight;
+    }
+
+    async function getWsToken() {
+      const accessToken = document.getElementById('accessToken').value.trim();
+      if (!accessToken) return log('accessToken을 입력하세요');
+
+      try {
+        const res = await fetch(`${API_URL}/auth/ws-token`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) {
+          log(`OTT 발급 실패: ${res.status} ${res.statusText}`);
+          return;
+        }
+        const data = await res.json();
+        wsToken = data.token;
+        log(`OTT 발급 성공: ${wsToken}`);
+        document.getElementById('connectBtn').disabled = false;
+      } catch (e) {
+        log(`OTT 발급 에러: ${e.message}`);
+      }
+    }
+
+    function connect() {
+      if (!wsToken) return log('먼저 OTT를 발급받으세요');
+
+      client = new StompJs.Client({
+        brokerURL: `${WS_URL}?token=${wsToken}`,
+        debug: (str) => log(`[STOMP] ${str}`),
+        reconnectDelay: 0,
+        onConnect: () => {
+          log('연결 성공!');
+          document.getElementById('status').textContent = '연결됨';
+          document.getElementById('sendBtn').disabled = false;
+
+          client.subscribe('/user/queue/messages', (frame) => {
+            const msg = JSON.parse(frame.body);
+            log(`수신: [${msg.sender.username || msg.sender.userId}] ${msg.content}`);
+          });
+
+          log('구독 완료: /user/queue/messages');
+        },
+        onStompError: (frame) => {
+          log(`STOMP 에러: ${frame.headers['message']}`);
+        },
+        onWebSocketClose: () => {
+          log('연결 종료');
+          document.getElementById('status').textContent = '미연결';
+          document.getElementById('sendBtn').disabled = true;
+        },
+      });
+
+      client.activate();
+    }
+
+    function disconnect() {
+      if (client) {
+        client.deactivate();
+        client = null;
+      }
+    }
+
+    function sendMessage() {
+      const receiverId = document.getElementById('receiverId').value.trim();
+      const content = document.getElementById('content').value.trim();
+      if (!receiverId || !content) return log('receiverId와 메시지를 입력하세요');
+
+      client.publish({
+        destination: '/app/message/send',
+        body: JSON.stringify({ receiverId, content }),
+      });
+
+      log(`송신: → ${receiverId}: ${content}`);
+      document.getElementById('content').value = '';
+    }
+  </script>
+</body>
+</html>
